@@ -73,7 +73,10 @@ export async function saveEmployee(id: string | null, _: FormState, form: FormDa
     if (photo instanceof File && photo.size > 0) photoUrl = await savePhoto(photo, d.employeeNo.toLowerCase().replace(/[^a-z0-9]+/g, "-"))
     else if (removeFlag) photoUrl = null
   } catch (e) {
-    return { error: t((e as Error).message) }
+    const msg = (e as Error).message
+    // our own errors are translation keys; anything else is a storage failure, so log it and show a generic message
+    if (!/^(upload|form)\./.test(msg)) console.error("photo upload failed:", e)
+    return { error: /^(upload|form)\./.test(msg) ? t(msg) : t("upload.err.config") }
   }
 
   const data = {
