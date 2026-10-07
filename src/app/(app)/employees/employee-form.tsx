@@ -1,7 +1,8 @@
 "use client"
 
 import Link from "next/link"
-import { useActionState, useMemo, useState } from "react"
+import { useActionState, useEffect, useMemo, useRef, useState } from "react"
+import { toast } from "sonner"
 import { Camera, Loader2, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -59,7 +60,28 @@ export function EmployeeForm({
   const [preview, setPreview] = useState<string | null>(values.photoUrl)
   const [removed, setRemoved] = useState(false)
   const [fileErr, setFileErr] = useState<string | null>(null)
+  const photoFile = useRef<File | null>(null)
   const f = state.fields ?? {}
+
+  // After each save attempt: React clears the file input, so put the chosen photo back,
+  // then tell the user what went wrong and bring the first problem into view.
+  useEffect(() => {
+    if (!state.error) return
+    const input = document.getElementById("photo") as HTMLInputElement | null
+    if (input && photoFile.current && !input.files?.length) {
+      const dt = new DataTransfer()
+      dt.items.add(photoFile.current)
+      input.files = dt.files
+    }
+    toast.error(t(state.error))
+    requestAnimationFrame(() => {
+      const first = Object.keys(state.fields ?? {})[0]
+      const el = (first && document.getElementById(first)) || document.querySelector<HTMLElement>('[role="alert"]')
+      el?.scrollIntoView({ behavior: "smooth", block: "center" })
+      if (el && "focus" in el) el.focus({ preventScroll: true })
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state])
   const set = (k: keyof FormValues) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => setV((s) => ({ ...s, [k]: e.target.value }))
 
   const ct = lookups.contractTypes.find((c) => c.id === v.contractTypeId)
@@ -114,6 +136,7 @@ export function EmployeeForm({
                 size="sm"
                 onClick={() => {
                   setRemoved(true)
+                  photoFile.current = null
                   const el = document.getElementById("photo") as HTMLInputElement
                   if (el) el.value = ""
                 }}
@@ -133,11 +156,14 @@ export function EmployeeForm({
               if (!file) return
               if (file.size > 2 * 1024 * 1024) {
                 setFileErr(t("form.photoSize"))
+                toast.error(t("form.photoSize"))
+                photoFile.current = null
                 e.target.value = ""
                 return
               }
               setFileErr(null)
               setRemoved(false)
+              photoFile.current = file
               setPreview(URL.createObjectURL(file))
             }}
           />

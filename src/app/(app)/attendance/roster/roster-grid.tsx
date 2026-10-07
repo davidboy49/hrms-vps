@@ -33,7 +33,7 @@ const ORDER = [1, 2, 3, 4, 5, 6, 0]
 
 function cellStyle(c: RosterRow["cells"][number]) {
   if (c.k === "OFF") return { cls: OFF_CLASS, text: "OFF" }
-  if (c.k === "HOLIDAY") return { cls: HOLIDAY_CLASS, text: "HD" }
+  if (c.k === "HOLIDAY") return { cls: HOLIDAY_CLASS, text: "PHL" }
   if (c.k === "LEAVE") return { cls: LEAVE_CLASS, text: "LV" }
   return { cls: c.code ? shiftClass(c.colour) : "bg-muted text-muted-foreground", text: c.code || "—" }
 }
@@ -123,7 +123,7 @@ export function RosterGrid(props: {
           </span>
         ))}
         <span className="flex items-center gap-1.5"><i className={cn("grid h-4 min-w-6 place-items-center rounded px-1 text-[10px] font-semibold not-italic", OFF_CLASS)}>OFF</i>{t("sch.legend.off")}</span>
-        <span className="flex items-center gap-1.5"><i className={cn("grid h-4 min-w-6 place-items-center rounded px-1 text-[10px] font-semibold not-italic", HOLIDAY_CLASS)}>HD</i>{t("sch.legend.holiday")}</span>
+        <span className="flex items-center gap-1.5"><i className={cn("grid h-4 min-w-6 place-items-center rounded px-1 text-[10px] font-semibold not-italic", HOLIDAY_CLASS)}>PHL</i>{t("sch.legend.holiday")}</span>
         <span className="flex items-center gap-1.5"><i className={cn("grid h-4 min-w-6 place-items-center rounded px-1 text-[10px] font-semibold not-italic", LEAVE_CLASS)}>LV</i>{t("sch.legend.leave")}</span>
         <span className="flex items-center gap-1.5"><i className="size-1.5 rounded-full bg-primary" />{t("sch.legend.changed")}</span>
       </div>

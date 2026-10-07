@@ -1,5 +1,5 @@
 import { db } from "@/lib/db"
-import { requireRole } from "@/lib/session"
+import { requirePerm } from "@/lib/session"
 import { tgConfig } from "@/lib/telegram"
 import { fmtDate, fmtDateTime } from "@/lib/format"
 import { getT, titleOf } from "@/i18n/server"
@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic"
 
 export default async function AnnouncementsPage() {
   const t = await getT()
-  await requireRole("HR")
+  await requirePerm("announcements.manage")
   const [rows, cfg] = await Promise.all([
     db.announcement.findMany({ orderBy: { createdAt: "desc" }, take: 50, include: { author: { select: { name: true } } } }),
     tgConfig(),

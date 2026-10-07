@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation"
 import { db } from "@/lib/db"
-import { requireRole } from "@/lib/session"
+import { can, requirePerm } from "@/lib/session"
 import { entityByKey } from "@/lib/masterdata"
 import { PageHeader } from "@/components/page-header"
 import { fmtDate } from "@/lib/format"
@@ -17,7 +17,7 @@ export async function generateMetadata({ params }: { params: Promise<{ entity: s
 
 export default async function MasterdataPage({ params }: { params: Promise<{ entity: string }> }) {
   const t = await getT()
-  const user = await requireRole("HR")
+  const user = await requirePerm("masterdata.view")
   const { entity } = await params
   const ent = entityByKey(entity)
   if (!ent) notFound()
@@ -82,7 +82,7 @@ export default async function MasterdataPage({ params }: { params: Promise<{ ent
         relOpts={relOpts}
         rows={data}
         showCount={ent.hasEmployees}
-        isAdmin={user.role === "ADMIN"}
+        isAdmin={can(user, "masterdata.delete")}
       />
     </>
   )

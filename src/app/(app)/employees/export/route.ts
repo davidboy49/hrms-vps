@@ -1,5 +1,5 @@
 import { db } from "@/lib/db"
-import { atLeast, getSession } from "@/lib/session"
+import { getSession, can } from "@/lib/session"
 import { buildOrderBy, buildWhere, employeeInclude, parseFilters } from "@/lib/employees"
 import { buildWorkbook, employeeRow, HEADERS } from "@/lib/employee-io"
 import { audit } from "@/lib/audit"
@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic"
 
 export async function GET(req: Request) {
   const user = await getSession()
-  if (!user || !atLeast(user.role, "HR")) return new Response("Forbidden", { status: 403 })
+  if (!user || !can(user, "employees.export")) return new Response("Forbidden", { status: 403 })
   if (!(await rateLimit(`export:${user.id}`, 30, 600)).ok) return new Response("Too many exports. Wait a few minutes.", { status: 429 })
   const sp = Object.fromEntries(new URL(req.url).searchParams.entries())
   const ids = sp.ids ? sp.ids.split(",").filter(Boolean) : undefined

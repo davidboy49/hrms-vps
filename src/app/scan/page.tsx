@@ -2,7 +2,7 @@ import Link from "next/link"
 import { redirect } from "next/navigation"
 import { QrCode, Users } from "lucide-react"
 import { db } from "@/lib/db"
-import { atLeast, getSession } from "@/lib/session"
+import { getSession, can } from "@/lib/session"
 import { QR_REASON_KEY, resolveQr, suggestedType } from "@/lib/qr-attendance"
 import { fmtDateTime } from "@/lib/format"
 import { logout } from "@/app/login/actions"
@@ -45,7 +45,7 @@ export default async function ScanPage({ searchParams }: { searchParams: Promise
         </div>
         <div className="flex items-center gap-1">
           <LanguageSwitcher />
-          {atLeast(user.role, "MANAGER") && (
+          {can(user, "dashboard.view") && (
             <Button variant="ghost" size="sm" render={<Link href="/" />}>
               {t("nav.dashboard")}
             </Button>

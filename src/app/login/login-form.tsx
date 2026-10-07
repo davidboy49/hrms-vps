@@ -16,8 +16,8 @@ export function LoginForm({ next = "" }: { next?: string }) {
     <form action={action} className="space-y-4">
       <input type="hidden" name="next" value={next} />
       <div className="space-y-1.5">
-        <Label htmlFor="email">{t("login.email")}</Label>
-        <Input id="email" name="email" type="email" autoComplete="username" placeholder="name@company.com" required autoFocus />
+        <Label htmlFor="username">{t("login.username")}</Label>
+        <Input id="username" name="username" type="text" autoComplete="username" autoCapitalize="none" autoCorrect="off" spellCheck={false} required autoFocus />
       </div>
       <div className="space-y-1.5">
         <Label htmlFor="password">{t("login.password")}</Label>

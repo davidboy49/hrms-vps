@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { db } from "@/lib/db"
-import { assertRole } from "@/lib/session"
+import { assertPerm } from "@/lib/session"
 import { audit } from "@/lib/audit"
 import { toDate } from "@/lib/format"
 import { getT } from "@/i18n/server"
@@ -21,7 +21,7 @@ const refresh = () => {
 /** Creates or updates a weekly template (a shift or a day off for each weekday). */
 export async function saveTemplate(id: string | null, input: z.input<typeof templateShape>): Promise<R> {
   const t = await getT()
-  const user = await assertRole("HR")
+  const user = await assertPerm("roster.edit")
   const p = templateShape.safeParse(input)
   if (!p.success) return { error: t(p.error.issues[0].message) }
   if (new Set(p.data.days.map((d) => d.weekday)).size !== 7) return { error: t("sch.err.days") }
@@ -43,7 +43,7 @@ export async function saveTemplate(id: string | null, input: z.input<typeof temp
 }
 
 export async function deleteTemplate(id: string): Promise<R> {
-  const user = await assertRole("HR")
+  const user = await assertPerm("roster.edit")
   const tpl = await db.scheduleTemplate.findUnique({ where: { id }, include: { _count: { select: { employees: true } } } })
   if (!tpl) return { ok: true }
   // people on it fall back to the default week (Sunday off)
@@ -55,7 +55,7 @@ export async function deleteTemplate(id: string): Promise<R> {
 
 /** Puts the listed employees on a template (or back on the default week when templateId is null). */
 export async function assignTemplate(templateId: string | null, employeeIds: string[]): Promise<R> {
-  const user = await assertRole("HR")
+  const user = await assertPerm("roster.edit")
   if (employeeIds.length === 0) return { ok: true, count: 0 }
   if (employeeIds.length > 2000) return { error: "Too many employees" }
   const r = await db.employee.updateMany({ where: { id: { in: employeeIds }, deletedAt: null }, data: { scheduleTemplateId: templateId } })
@@ -76,7 +76,7 @@ const rosterShape = z.object({
 /** Changes one employee's plan for a date or a run of dates, such as a holiday trip or a swapped shift. */
 export async function setRoster(input: z.input<typeof rosterShape>): Promise<R> {
   const t = await getT()
-  const user = await assertRole("HR")
+  const user = await assertPerm("roster.edit")
   const p = rosterShape.safeParse(input)
   if (!p.success) return { error: t("sch.err.invalid") }
   const { employeeId, value, note } = p.data
@@ -117,7 +117,7 @@ export async function setRoster(input: z.input<typeof rosterShape>): Promise<R> 
  */
 export async function setWeeklyOff(employeeId: string, offDays: number[]): Promise<R> {
   const t = await getT()
-  const user = await assertRole("HR")
+  const user = await assertPerm("roster.edit")
   const off = new Set(offDays.filter((d) => Number.isInteger(d) && d >= 0 && d <= 6))
   if (off.size >= 7) return { error: t("sch.err.allOff") }
 

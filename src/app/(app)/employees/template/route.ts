@@ -1,10 +1,10 @@
-import { atLeast, getSession } from "@/lib/session"
+import { getSession, can } from "@/lib/session"
 import { buildWorkbook, TEMPLATE_NOTE_KEYS } from "@/lib/employee-io"
 import { getT } from "@/i18n/server"
 
 export async function GET() {
   const user = await getSession()
-  if (!user || !atLeast(user.role, "HR")) return new Response("Forbidden", { status: 403 })
+  if (!user || !can(user, "employees.import")) return new Response("Forbidden", { status: 403 })
   const t = await getT()
   const wb = await buildWorkbook(
     [["", "Sample Person", "", "FEMALE", "1995-06-20", "+855 12 000 000", "sample@company.com", "Operations", "Site Supervisor", "2026-01-15", "Fixed term", "2026-12-31", 600, "MONTH", "USD", "Active", "2001"]],

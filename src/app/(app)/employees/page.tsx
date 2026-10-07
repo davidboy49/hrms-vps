@@ -1,5 +1,5 @@
 import { db } from "@/lib/db"
-import { atLeast, requireRole } from "@/lib/session"
+import { requirePerm, can } from "@/lib/session"
 import { buildOrderBy, buildWhere, employeeInclude, lookups, parseFilters, SORTS, type SP } from "@/lib/employees"
 import { BASIS_KEY, fmtDate, fmtRate } from "@/lib/format"
 import { getLocale, getT, titleOf } from "@/i18n/server"
@@ -14,7 +14,7 @@ export const dynamic = "force-dynamic"
 export default async function EmployeesPage({ searchParams }: { searchParams: Promise<SP> }) {
   const t = await getT()
   const locale = await getLocale()
-  const user = await requireRole("MANAGER")
+  const user = await requirePerm("employees.view")
   const sp = await searchParams
   const f = parseFilters(sp)
   const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? ""
@@ -34,7 +34,7 @@ export default async function EmployeesPage({ searchParams }: { searchParams: Pr
   const page = Math.min(Math.max(1, parseInt(one(sp.page), 10) || 1), pages)
   const emps = await db.employee.findMany({ where, include: employeeInclude, orderBy: buildOrderBy(sortKey, dir), skip: (page - 1) * size, take: size })
 
-  const canEdit = atLeast(user.role, "HR")
+  const canEdit = can(user, "employees.edit")
   const rows: Row[] = emps.map((e) => ({
     id: e.id,
     employeeNo: e.employeeNo,

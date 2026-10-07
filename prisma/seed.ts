@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs"
 const db = new PrismaClient()
 
 const ADMIN_EMAIL = process.env.SEED_ADMIN_EMAIL ?? "admin@company.com"
+const ADMIN_USERNAME = process.env.SEED_ADMIN_USERNAME ?? "admin"
 const ADMIN_PASSWORD = process.env.SEED_ADMIN_PASSWORD ?? "ChangeMe123!"
 const SAMPLE = process.env.SEED_SAMPLE !== "0"
 
@@ -20,9 +21,9 @@ async function lookup<T extends { code: string }>(
 
 async function main() {
   await db.user.upsert({
-    where: { email: ADMIN_EMAIL },
+    where: { username: ADMIN_USERNAME },
     update: {},
-    create: { email: ADMIN_EMAIL, name: "System Admin", role: "ADMIN", passwordHash: await bcrypt.hash(ADMIN_PASSWORD, 10) },
+    create: { username: ADMIN_USERNAME, email: ADMIN_EMAIL, name: "System Admin", role: { connect: { key: "ADMIN" } }, passwordHash: await bcrypt.hash(ADMIN_PASSWORD, 10) },
   })
 
   const depts = await lookup(db.department, [

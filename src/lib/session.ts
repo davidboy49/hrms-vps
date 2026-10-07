@@ -2,8 +2,8 @@ import { SignJWT, jwtVerify } from "jose"
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 import { cache } from "react"
-import type { Role } from "@prisma/client"
 import { db } from "@/lib/db"
+import { ALL_PERMISSIONS, can, isPermission, type Permission } from "@/lib/permissions"
 
 export const COOKIE = "pd_session"
 
@@ -12,12 +12,19 @@ export const COOKIE = "pd_session"
  * Staff who check in by phone stay signed in for 90 days; managers and HR for 30 if they tick "keep me signed in".
  * Every visit renews it (see proxy.ts), so someone who uses the app regularly never has to sign in again.
  */
-export function sessionDays(role: Role, remember: boolean) {
-  if (role === "EMPLOYEE") return 90
+export function sessionDays(perms: readonly string[], remember: boolean) {
+  // roles without dashboard access are field staff who check in by phone
+  if (!perms.includes("dashboard.view")) return 90
   return remember ? 30 : 0
 }
 
-export type SessionUser = { id: string; email: string; name: string; role: Role }
+/** `perms` is the full list for the Admin role; other roles have what was granted in Settings → Roles. */
+export type SessionUser = { id: string; username: string; email: string | null; name: string; role: string; roleName: string; roleIsSystem: boolean; perms: Permission[] }
+
+/** Permissions of a role row. The built-in Admin always has everything, so it can never be locked out. */
+export function permsOf(r: { key: string | null; permissions: string[] }): Permission[] {
+  return r.key === "ADMIN" ? ALL_PERMISSIONS : r.permissions.filter(isPermission)
+}
 type Claims = { id: string; v: number; d: number }
 
 function key() {
@@ -71,9 +78,12 @@ export const getSession = cache(async (): Promise<SessionUser | null> => {
   const jar = await cookies()
   const claims = await decrypt(jar.get(COOKIE)?.value)
   if (!claims) return null
-  const u = await db.user.findUnique({ where: { id: claims.id }, select: { id: true, email: true, name: true, role: true, isActive: true, tokenVersion: true } })
+  const u = await db.user.findUnique({
+    where: { id: claims.id },
+    select: { id: true, username: true, email: true, name: true, isActive: true, tokenVersion: true, role: { select: { key: true, name: true, isSystem: true, permissions: true } } },
+  })
   if (!u || !u.isActive || u.tokenVersion !== claims.v) return null
-  return { id: u.id, email: u.email, name: u.name, role: u.role }
+  return { id: u.id, username: u.username, email: u.email, name: u.name, role: u.role.key ?? u.role.name, roleName: u.role.name, roleIsSystem: u.role.isSystem, perms: permsOf(u.role) }
 })
 
 export async function requireUser() {
@@ -82,21 +92,17 @@ export async function requireUser() {
   return u
 }
 
-const RANK: Record<Role, number> = { EMPLOYEE: 0, MANAGER: 1, HR: 2, ADMIN: 3 }
+export { can }
 
-export function atLeast(role: Role, min: Role) {
-  return RANK[role] >= RANK[min]
-}
-
-export async function requireRole(min: Role) {
+export async function requirePerm(perm: Permission) {
   const u = await requireUser()
-  if (!atLeast(u.role, min)) redirect("/?denied=1")
+  if (!can(u, perm)) redirect("/?denied=1")
   return u
 }
 
 /** For server actions: throws instead of redirecting. */
-export async function assertRole(min: Role) {
+export async function assertPerm(perm: Permission) {
   const u = await getSession()
-  if (!u || !atLeast(u.role, min)) throw new Error("Not allowed")
+  if (!u || !can(u, perm)) throw new Error("Not allowed")
   return u
 }

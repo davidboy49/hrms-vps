@@ -1,7 +1,7 @@
 import { headers } from "next/headers"
 import QRCode from "qrcode"
 import { db } from "@/lib/db"
-import { requireRole } from "@/lib/session"
+import { requirePerm } from "@/lib/session"
 import { makeStaticToken } from "@/lib/qr"
 import { dictFor } from "@/i18n/server"
 import { PrintButton } from "./print-button"
@@ -11,7 +11,7 @@ export const metadata = { title: "QR poster" }
 
 /** A printable poster for the entrance. It is written in Khmer and English so every employee can read it. */
 export default async function QrPoster({ params }: { params: Promise<{ id: string }> }) {
-  await requireRole("HR")
+  await requirePerm("qr.manage")
   const { id } = await params
   const loc = await db.location.findUnique({ where: { id } })
   const km = dictFor("km")

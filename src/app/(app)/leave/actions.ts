@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { db } from "@/lib/db"
-import { assertRole, atLeast, getSession } from "@/lib/session"
+import { assertPerm, getSession, can } from "@/lib/session"
 import { audit } from "@/lib/audit"
 import { toDate } from "@/lib/format"
 import { balances, workingDays } from "@/lib/leave"
@@ -37,7 +37,7 @@ export async function requestLeave(input: z.input<typeof requestShape>): Promise
   const u = await me()
   const p = requestShape.safeParse(input)
   if (!p.success) return { error: t("lv.err.invalid") }
-  const employeeId = atLeast(u.role, "HR") && p.data.employeeId ? p.data.employeeId : u.employeeId
+  const employeeId = can(u, "leave.manage") && p.data.employeeId ? p.data.employeeId : u.employeeId
   if (!employeeId) return { error: t("lv.err.noEmployee") }
   const { from, to } = p.data
   if (to < from) return { error: t("sch.err.range") }
@@ -70,7 +70,7 @@ export async function requestLeave(input: z.input<typeof requestShape>): Promise
 /** Approving puts the person on leave in the roster for each working day, so attendance and exports treat them as on leave. */
 export async function decideLeave(id: string, decision: "APPROVED" | "REJECTED", note?: string): Promise<R> {
   const t = await getT()
-  const u = await assertRole("HR")
+  const u = await assertPerm("leave.manage")
   const r = await db.leaveRequest.findUnique({ where: { id }, include: { leaveType: true } })
   if (!r || r.status !== "PENDING") return { error: t("lv.err.decided") }
   if (decision === "APPROVED") {
@@ -102,7 +102,7 @@ export async function cancelLeave(id: string): Promise<R> {
   const u = await me()
   const r = await db.leaveRequest.findUnique({ where: { id } })
   if (!r || (r.status !== "PENDING" && r.status !== "APPROVED")) return { error: t("lv.err.decided") }
-  if (!atLeast(u.role, "HR") && (r.employeeId !== u.employeeId || r.status !== "PENDING")) return { error: t("lv.err.decided") }
+  if (!can(u, "leave.manage") && (r.employeeId !== u.employeeId || r.status !== "PENDING")) return { error: t("lv.err.decided") }
   await db.$transaction([
     db.rosterEntry.deleteMany({ where: { leaveRequestId: id } }),
     db.leaveRequest.update({ where: { id }, data: { status: "CANCELLED", decidedBy: u.id, decidedAt: new Date() } }),
@@ -122,7 +122,7 @@ const typeShape = z.object({
 
 export async function saveLeaveType(id: string | null, input: z.input<typeof typeShape>): Promise<R> {
   const t = await getT()
-  const u = await assertRole("HR")
+  const u = await assertPerm("leave.manage")
   const p = typeShape.safeParse(input)
   if (!p.success) return { error: t(p.error.issues[0].message) }
   try {
@@ -137,7 +137,7 @@ export async function saveLeaveType(id: string | null, input: z.input<typeof typ
 
 /** A per-person yearly allowance that replaces the type's default; empty removes it. */
 export async function setEntitlement(employeeId: string, leaveTypeId: string, year: number, days: number | null): Promise<R> {
-  const u = await assertRole("HR")
+  const u = await assertPerm("leave.manage")
   if (!Number.isInteger(year) || (days != null && (days < 0 || days > 366))) return { error: "Invalid" }
   if (days == null) await db.leaveEntitlement.deleteMany({ where: { employeeId, leaveTypeId, year } })
   else

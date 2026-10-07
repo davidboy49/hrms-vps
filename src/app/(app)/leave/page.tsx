@@ -1,5 +1,5 @@
 import { db } from "@/lib/db"
-import { atLeast, requireUser } from "@/lib/session"
+import { requireUser, can } from "@/lib/session"
 import { balances } from "@/lib/leave"
 import { localDateKey } from "@/lib/format"
 import { getT, titleOf } from "@/i18n/server"
@@ -16,8 +16,8 @@ export default async function LeavePage({ searchParams }: { searchParams: Promis
   const user = await requireUser()
   const sp = await searchParams
   const status = STATUSES.includes(sp.status ?? "") ? sp.status! : ""
-  const hr = atLeast(user.role, "HR")
-  const manager = atLeast(user.role, "MANAGER")
+  const hr = can(user, "leave.manage")
+  const manager = can(user, "leave.viewAll")
   const year = Number(localDateKey(new Date()).slice(0, 4))
 
   const me = await db.user.findUnique({ where: { id: user.id }, select: { employeeId: true } })

@@ -1,5 +1,5 @@
 import { db } from "@/lib/db"
-import { atLeast, requireRole } from "@/lib/session"
+import { requirePerm, can } from "@/lib/session"
 import { loadPlanner, weekdayOf } from "@/lib/schedule"
 import { localDateKey } from "@/lib/format"
 import { getT, titleOf } from "@/i18n/server"
@@ -14,9 +14,9 @@ const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) 
 
 export default async function RosterPage({ searchParams }: { searchParams: Promise<SP> }) {
   const t = await getT()
-  const user = await requireRole("MANAGER")
+  const user = await requirePerm("roster.view")
   const sp = await searchParams
-  const canEdit = atLeast(user.role, "HR")
+  const canEdit = can(user, "roster.edit")
 
   const today = localDateKey(new Date())
   const month = /^\d{4}-\d{2}$/.test(one(sp.m)) ? one(sp.m) : today.slice(0, 7)

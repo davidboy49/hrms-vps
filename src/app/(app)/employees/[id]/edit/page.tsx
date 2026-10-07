@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation"
 import { db } from "@/lib/db"
-import { requireRole } from "@/lib/session"
+import { requirePerm } from "@/lib/session"
 import { lookups } from "@/lib/employees"
 import { toInput } from "@/lib/format"
 import { PageHeader } from "@/components/page-header"
@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic"
 
 export default async function EditEmployeePage({ params }: { params: Promise<{ id: string }> }) {
   const t = await getT()
-  await requireRole("HR")
+  await requirePerm("employees.edit")
   const { id } = await params
   const [e, lk] = await Promise.all([db.employee.findFirst({ where: { id, deletedAt: null } }), lookups()])
   if (!e) notFound()

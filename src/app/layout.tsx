@@ -22,7 +22,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang={locale} suppressHydrationWarning className={`${geistSans.variable} ${geistMono.variable} ${khmer.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col">
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+        <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} storageKey="peopledesk-theme" disableTransitionOnChange>
           <I18nProvider locale={locale} dict={dictFor(locale)}>
             {children}
             <Toaster richColors position="top-right" />

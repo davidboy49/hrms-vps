@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { db } from "@/lib/db"
-import { assertRole } from "@/lib/session"
+import { assertPerm } from "@/lib/session"
 import { audit } from "@/lib/audit"
 import { relinkUnknown, syncDevice } from "@/lib/attendance"
 import { adapterFor } from "@/lib/devices"
@@ -11,14 +11,14 @@ import { getT } from "@/i18n/server"
 
 export async function syncOne(id: string) {
   const t = await getT()
-  await assertRole("HR")
+  await assertPerm("attendance.manage")
   const r = await syncDevice(id)
   revalidatePath("/attendance")
   return r.ok ? r : { ...r, message: t(r.message) }
 }
 
 export async function syncAll() {
-  const user = await assertRole("HR")
+  const user = await assertPerm("attendance.manage")
   const devices = await db.device.findMany({ where: { isActive: true, mode: { notIn: ["PUSH", "QR"] } } })
   let inserted = 0
   let failed = 0
@@ -35,7 +35,7 @@ export async function syncAll() {
 
 export async function testDevice(id: string) {
   const t = await getT()
-  await assertRole("HR")
+  await assertPerm("attendance.manage")
   const d = await db.device.findUnique({ where: { id } })
   if (!d) return { ok: false, message: t("dev.notFound") }
   const r = await adapterFor(d).testConnection()
@@ -56,7 +56,7 @@ const deviceSchema = z.object({
 
 export async function saveDevice(id: string | null, form: FormData): Promise<{ error?: string }> {
   const t = await getT()
-  const user = await assertRole("ADMIN")
+  const user = await assertPerm("attendance.devices")
   const p = deviceSchema.safeParse(Object.fromEntries(form.entries()))
   if (!p.success) return { error: t(p.error.issues[0].message) }
   const d = p.data
@@ -69,7 +69,7 @@ export async function saveDevice(id: string | null, form: FormData): Promise<{ e
 }
 
 export async function deleteDevice(id: string) {
-  const user = await assertRole("ADMIN")
+  const user = await assertPerm("attendance.devices")
   await db.device.delete({ where: { id } })
   await audit(user.id, "delete", "Device", id)
   revalidatePath("/attendance")
