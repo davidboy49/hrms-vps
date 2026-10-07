@@ -1,0 +1,505 @@
+<title>PeopleDesk HR Design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: sticky tab bar over one proposal; each tab is a screen mockup in a window frame with design notes beside it. */
+:root{
+  --bg:#f4f5f7; --surface:#ffffff; --surface2:#f8f9fb; --line:#e3e6ec; --fg:#161b26; --muted:#667085;
+  --accent:#0d6b5f; --accent-soft:#e0f1ee; --accent-fg:#ffffff;
+  --ok:#157f4a; --ok-soft:#e1f4ea; --warn:#a15c07; --warn-soft:#fdf0d9; --bad:#b42318; --bad-soft:#fde8e6; --info:#2a5bd7; --info-soft:#e6edfc;
+  --sans:'Geist',system-ui,-apple-system,'Segoe UI',sans-serif; --mono:'Geist Mono',ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0e1117; --surface:#161b24; --surface2:#1b212c; --line:#2a3240; --fg:#e8ebf0; --muted:#98a2b3;
+  --accent:#3fb8a6; --accent-soft:#16332f; --accent-fg:#06201c;
+  --ok:#4cc58a; --ok-soft:#14301f; --warn:#e8a64a; --warn-soft:#3a2a10; --bad:#f08a80; --bad-soft:#3d1b18; --info:#7ea2f5; --info-soft:#1b2745; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0e1117; --surface:#161b24; --surface2:#1b212c; --line:#2a3240; --fg:#e8ebf0; --muted:#98a2b3;
+  --accent:#3fb8a6; --accent-soft:#16332f; --accent-fg:#06201c;
+  --ok:#4cc58a; --ok-soft:#14301f; --warn:#e8a64a; --warn-soft:#3a2a10; --bad:#f08a80; --bad-soft:#3d1b18; --info:#7ea2f5; --info-soft:#1b2745; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:14px;line-height:1.5;padding-inline:16px;padding-block:0 64px;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1180px;margin-inline:auto}
+h1,h2,h3,h4{margin:0;text-wrap:balance;letter-spacing:-.01em}
+p{margin:0}
+.mono{font-family:var(--mono)}
+header.top{padding-block:28px 18px;display:flex;gap:16px;justify-content:space-between;align-items:flex-end;flex-wrap:wrap}
+header.top h1{font-size:28px;font-weight:650}
+header.top p{color:var(--muted);max-width:60ch;margin-top:6px}
+.badge{font:500 11px var(--mono);letter-spacing:.06em;text-transform:uppercase;background:var(--warn-soft);color:var(--warn);padding:4px 8px;border-radius:4px}
+nav.tabs{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line);display:flex;gap:2px;overflow-x:auto;padding-block:8px;margin-bottom:24px}
+nav.tabs button{font:500 13px var(--sans);color:var(--muted);background:none;border:0;padding:8px 12px;border-radius:6px;cursor:pointer;white-space:nowrap}
+nav.tabs button:hover{background:var(--surface2);color:var(--fg)}
+nav.tabs button[aria-selected="true"]{background:var(--fg);color:var(--bg)}
+button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+section.pane[hidden]{display:none}
+.lede{font-size:15px;color:var(--muted);max-width:70ch;margin-bottom:20px}
+.split{display:grid;grid-template-columns:minmax(0,1fr) 270px;gap:24px;align-items:start}
+@media(max-width:960px){.split{grid-template-columns:minmax(0,1fr)}}
+.notes{display:flex;flex-direction:column;gap:14px}
+.notes h4{font:600 12px var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.notes ul{margin:6px 0 0;padding-left:16px;display:flex;flex-direction:column;gap:6px}
+.notes li{color:var(--fg)}
+.notes .box{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px}
+
+/* window frame */
+.win{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden;box-shadow:0 1px 2px rgba(16,24,40,.06),0 8px 24px rgba(16,24,40,.06)}
+.win-bar{display:flex;align-items:center;gap:6px;padding:9px 12px;background:var(--surface2);border-bottom:1px solid var(--line)}
+.win-bar i{width:9px;height:9px;border-radius:50%;background:var(--line)}
+.win-bar span{margin-left:10px;font:12px var(--mono);color:var(--muted);background:var(--surface);border:1px solid var(--line);border-radius:5px;padding:2px 10px}
+.scroll-x{overflow-x:auto}
+
+/* app shell */
+.app{display:grid;grid-template-columns:196px minmax(0,1fr);min-width:820px}
+.side{background:var(--surface2);border-right:1px solid var(--line);padding:14px 10px;display:flex;flex-direction:column;gap:2px;font-size:13px}
+.brand{display:flex;gap:8px;align-items:center;font-weight:650;padding:2px 8px 14px}
+.logo{width:22px;height:22px;border-radius:6px;background:var(--accent);display:grid;place-items:center;color:var(--accent-fg)}
+.side .grp{font:500 10px var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--muted);padding:12px 8px 4px}
+.side a{display:flex;gap:9px;align-items:center;padding:7px 8px;border-radius:6px;color:var(--muted);text-decoration:none}
+.side a.on{background:var(--accent-soft);color:var(--accent);font-weight:600}
+.side svg{width:15px;height:15px;flex:none}
+.main{min-width:0}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 18px;border-bottom:1px solid var(--line)}
+.crumb{color:var(--muted);font-size:12px}
+.me{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
+.content{padding:18px}
+.ph{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+.ph h3{font-size:19px;font-weight:650}
+.ph p{color:var(--muted);font-size:12px;margin-top:2px}
+
+/* controls */
+.btn{display:inline-flex;align-items:center;gap:6px;font:500 12.5px var(--sans);padding:7px 11px;border-radius:6px;border:1px solid var(--line);background:var(--surface);color:var(--fg);cursor:default;white-space:nowrap}
+.btn svg{width:14px;height:14px}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+.btn.ghost{border-color:transparent;background:transparent;color:var(--muted)}
+.btn.sm{padding:4px 8px;font-size:12px}
+.inp{display:flex;align-items:center;gap:7px;border:1px solid var(--line);border-radius:6px;background:var(--surface);padding:7px 10px;color:var(--muted);font-size:12.5px;min-height:33px}
+.inp svg{width:14px;height:14px;flex:none}
+.inp.val{color:var(--fg)}
+.lbl{font:500 11px var(--mono);text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:4px;display:block}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.grow{flex:1;min-width:140px}
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:500;padding:2px 8px;border-radius:99px;white-space:nowrap}
+.pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.p-ok{background:var(--ok-soft);color:var(--ok)} .p-warn{background:var(--warn-soft);color:var(--warn)} .p-bad{background:var(--bad-soft);color:var(--bad)} .p-info{background:var(--info-soft);color:var(--info)} .p-mute{background:var(--surface2);color:var(--muted);border:1px solid var(--line)}
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;background:var(--accent-soft);color:var(--accent);padding:3px 8px;border-radius:5px}
+.av{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:600;flex:none}
+.a1{background:#d9e8ff;color:#1e4aa8}.a2{background:#fde2d3;color:#9a3d12}.a3{background:#dcf0dd;color:#256b2c}.a4{background:#efdcf7;color:#74278f}.a5{background:#fbeec2;color:#7a5a05}.a6{background:#d8f0f0;color:#176a6a}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .av{filter:brightness(.85) saturate(.9)}}
+:root[data-theme="dark"] .av{filter:brightness(.85) saturate(.9)}
+
+/* table */
+table{border-collapse:collapse;width:100%;font-size:12.5px}
+th{font:500 11px var(--mono);text-transform:uppercase;letter-spacing:.05em;color:var(--muted);text-align:left;padding:9px 10px;background:var(--surface2);border-block:1px solid var(--line);white-space:nowrap}
+td{padding:9px 10px;border-bottom:1px solid var(--line);white-space:nowrap;vertical-align:middle}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+tr:last-child td{border-bottom:0}
+.who{display:flex;gap:10px;align-items:center}
+.who b{display:block;font-weight:600}
+.who small{color:var(--muted);font-size:11.5px}
+.tbl{border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.pager{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 12px;border-top:1px solid var(--line);font-size:12px;color:var(--muted)}
+.pg{display:flex;gap:4px}
+.pg span{min-width:28px;height:28px;display:grid;place-items:center;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--fg);padding-inline:6px}
+.pg span.on{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.filters{border:1px solid var(--line);background:var(--surface2);border-radius:8px;padding:12px;margin-bottom:12px}
+.fgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.cb{width:14px;height:14px;border:1px solid var(--line);border-radius:3px;background:var(--surface);display:inline-block;vertical-align:middle}
+.cb.on{background:var(--accent);border-color:var(--accent)}
+
+/* login */
+.login{display:grid;grid-template-columns:1fr 1fr;min-height:430px}
+@media(max-width:700px){.login{grid-template-columns:1fr}.login .art{display:none}}
+.login .art{background:var(--accent);color:var(--accent-fg);padding:32px;display:flex;flex-direction:column;justify-content:space-between}
+.login .art h3{font-size:24px;line-height:1.2;max-width:15ch}
+.login .art small{opacity:.8}
+.login .form{padding:40px 12%;display:flex;flex-direction:column;justify-content:center;gap:14px}
+.login .form h3{font-size:20px}
+
+/* cards */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px}
+.card h4{font-size:14px;margin-bottom:4px}
+.card p,.card li{color:var(--muted);font-size:13px}
+.card ul{margin:6px 0 0;padding-left:16px}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:12.5px}
+.kv dt{color:var(--muted)} .kv dd{margin:0}
+.dev{display:flex;flex-direction:column;gap:10px;border:1px solid var(--line);border-radius:8px;padding:14px;background:var(--surface)}
+.stat{display:flex;gap:18px;flex-wrap:wrap;font-size:12px;color:var(--muted)}
+.stat b{display:block;color:var(--fg);font-size:16px;font-variant-numeric:tabular-nums}
+.drop{border:1.5px dashed var(--line);border-radius:8px;padding:22px;text-align:center;color:var(--muted);font-size:12.5px;background:var(--surface2)}
+.photo{width:92px;height:92px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-size:26px;font-weight:600;border:3px solid var(--surface);box-shadow:0 0 0 1px var(--line)}
+.tabs2{display:flex;gap:18px;border-bottom:1px solid var(--line);margin-bottom:14px;font-size:13px;overflow-x:auto}
+.tabs2 span{padding:8px 0;color:var(--muted);white-space:nowrap}
+.tabs2 span.on{color:var(--fg);border-bottom:2px solid var(--accent);font-weight:600}
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.sec-title{font-weight:600;font-size:13px;margin:16px 0 8px}
+.erd{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.ent{background:var(--surface);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.ent h4{font:600 12.5px var(--mono);padding:8px 12px;background:var(--surface2);border-bottom:1px solid var(--line)}
+.ent h4.core{background:var(--accent);color:var(--accent-fg)}
+.ent ul{list-style:none;margin:0;padding:8px 12px;font:12px/1.7 var(--mono);color:var(--muted)}
+.ent li b{color:var(--fg);font-weight:500}
+.tag{font-size:10.5px;padding:1px 6px;border-radius:4px;background:var(--surface2);border:1px solid var(--line);color:var(--muted);margin-left:4px}
+.phase{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.phase .card h4{display:flex;justify-content:space-between;gap:8px}
+.q{display:flex;flex-direction:column;gap:10px}
+.q .card{display:grid;grid-template-columns:28px 1fr;gap:10px}
+.q .n{font:600 12px var(--mono);color:var(--accent);padding-top:2px}
+.q b{display:block;margin-bottom:2px}
+code{font:12px var(--mono);background:var(--surface2);border:1px solid var(--line);border-radius:4px;padding:1px 5px}
+pre.tree{font:12px/1.65 var(--mono);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px;overflow-x:auto;margin:0;color:var(--muted)}
+@media(prefers-reduced-motion:no-preference){section.pane{animation:in .18s ease-out}@keyframes in{from{opacity:.4}to{opacity:1}}}
+</style>
+
+<div class="wrap">
+<header class="top">
+  <div>
+    <h1>PeopleDesk</h1>
+    <p>Design proposal for the HR system. Click through the screens, then tell me what to change or confirm. Nothing is built yet and all data shown is sample data.</p>
+  </div>
+  <span class="badge">Draft for confirmation</span>
+</header>
+
+<nav class="tabs" role="tablist" id="tabs">
+  <button role="tab" data-t="overview" aria-selected="true">Overview</button>
+  <button role="tab" data-t="login" aria-selected="false">Login</button>
+  <button role="tab" data-t="list" aria-selected="false">Employee list</button>
+  <button role="tab" data-t="form" aria-selected="false">Employee profile</button>
+  <button role="tab" data-t="att" aria-selected="false">Attendance sync</button>
+  <button role="tab" data-t="master" aria-selected="false">Masterdata</button>
+  <button role="tab" data-t="settings" aria-selected="false">Settings</button>
+  <button role="tab" data-t="data" aria-selected="false">Data model</button>
+  <button role="tab" data-t="more" aria-selected="false">Proposed extras</button>
+  <button role="tab" data-t="ask" aria-selected="false">To confirm</button>
+</nav>
+
+<!-- ============ OVERVIEW ============ -->
+<section class="pane" id="p-overview">
+  <p class="lede">A web HR system for managing employees, their contracts and pay rate, attendance pulled from ZKTeco devices, and the lookup lists behind them. Built with Next.js, shadcn/ui, PostgreSQL and lucide icons.</p>
+  <div class="cards">
+    <div class="card"><h4>Login</h4><p>Email and password, session cookie, role-based access. Admin creates users, no public sign-up.</p></div>
+    <div class="card"><h4>Employees</h4><p>Paged list with No, Employee, Designation, Department, Joining Date, Contract, Rate and Status. Advanced filter, import, export, profile picture.</p></div>
+    <div class="card"><h4>Attendance sync</h4><p>ZKTeco devices registered in the system. Mock adapter first, real device connection later without changing the screens.</p></div>
+    <div class="card"><h4>Masterdata</h4><p>Departments, designations, contract types, statuses, locations, shifts and holidays maintained in one place.</p></div>
+    <div class="card"><h4>Settings</h4><p>Company profile, users and roles, attendance rules, employee numbering, import templates.</p></div>
+    <div class="card"><h4>Extras (your call)</h4><p>Leave, contract expiry alerts, org chart, documents, audit log, payroll prep. See the Proposed extras tab.</p></div>
+  </div>
+  <h3 style="margin:28px 0 10px;font-size:16px">Technical approach</h3>
+  <div class="cards">
+    <div class="card"><h4>Stack</h4><ul><li>Next.js 15, App Router, TypeScript</li><li>shadcn/ui, Tailwind, lucide-react</li><li>PostgreSQL with Prisma</li><li>Auth.js (credentials) with bcrypt</li></ul></div>
+    <div class="card"><h4>Lists and files</h4><ul><li>TanStack Table, server-side paging and filters</li><li>Filters kept in the URL, so views can be shared</li><li>ExcelJS for .xlsx import and export</li><li>Photos on local disk or S3, switchable by env</li></ul></div>
+    <div class="card"><h4>Attendance</h4><ul><li>Device adapter interface with a mock now</li><li>Raw punches stored, then turned into daily records</li><li>Real option later: device pushes to us (ADMS) or we pull (node-zklib)</li></ul></div>
+  </div>
+  <h3 style="margin:28px 0 10px;font-size:16px">Project layout</h3>
+<pre class="tree">src/
+  app/
+    (auth)/login/
+    (app)/employees/          list, [id] profile, import
+    (app)/attendance/         devices, punches, daily records
+    (app)/masterdata/[entity]/
+    (app)/settings/
+    api/                      export, upload, device endpoints
+  components/ui/              shadcn
+  lib/db, lib/auth, lib/devices/{mock,zk}.ts
+prisma/schema.prisma, seed.ts</pre>
+</section>
+
+<!-- ============ LOGIN ============ -->
+<section class="pane" id="p-login" hidden>
+  <div class="split">
+    <div class="win">
+      <div class="win-bar"><i></i><i></i><i></i><span>/login</span></div>
+      <div class="login">
+        <div class="art">
+          <div class="brand" style="padding:0"><div class="logo" style="background:var(--accent-fg);color:var(--accent)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6M17 4.5a3.5 3.5 0 010 7M21.5 20c0-2.6-1.5-4.4-3.5-5.3"/></svg></div>PeopleDesk</div>
+          <h3>Everything about your people, in one place.</h3>
+          <small>Employees · Attendance · Masterdata</small>
+        </div>
+        <div class="form">
+          <div><h3>Sign in</h3><p style="color:var(--muted);font-size:12.5px;margin-top:2px">Use the account your HR admin created for you.</p></div>
+          <div><span class="lbl">Email</span><div class="inp val">name@company.com</div></div>
+          <div><span class="lbl">Password</span><div class="inp val">••••••••••<span style="margin-left:auto">Show</span></div></div>
+          <div class="row" style="justify-content:space-between;font-size:12px"><span class="row" style="gap:6px"><span class="cb on"></span> Keep me signed in</span><span style="color:var(--accent)">Forgot password?</span></div>
+          <div class="btn pri" style="justify-content:center;padding:9px">Sign in</div>
+        </div>
+      </div>
+    </div>
+    <div class="notes">
+      <div class="box"><h4>Behaviour</h4><ul><li>No public registration. Admins invite users.</li><li>Five failed attempts locks the account for 15 minutes.</li><li>Forgot password sends a reset link (needs an SMTP server, see To confirm).</li><li>Roles: Admin, HR, Manager, Employee (read own).</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ EMPLOYEE LIST ============ -->
+<section class="pane" id="p-list" hidden>
+  <div class="split">
+    <div class="win">
+      <div class="win-bar"><i></i><i></i><i></i><span>/employees</span></div>
+      <div class="scroll-x"><div class="app">
+        <aside class="side">
+          <div class="brand"><div class="logo"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/></svg></div>PeopleDesk</div>
+          <a><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>Dashboard</a>
+          <a class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 00-3-3.9M16 3.1a4 4 0 010 7.8"/></svg>Employees</a>
+          <a><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Attendance</a>
+          <div class="grp">Admin</div>
+          <a><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg>Masterdata</a>
+          <a><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 01-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 010-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 014 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 010 4h-.1a1.7 1.7 0 00-1.5 1z"/></svg>Settings</a>
+        </aside>
+        <div class="main">
+          <div class="topbar"><span class="crumb">Employees</span><span class="me"><span class="av a6" style="width:24px;height:24px;font-size:10px">SD</span>HR Admin</span></div>
+          <div class="content">
+            <div class="ph"><div><h3>Employees</h3><p>248 employees · 231 active</p></div>
+              <div class="row">
+                <span class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>Import</span>
+                <span class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>Export</span>
+                <span class="btn pri"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Add employee</span>
+              </div></div>
+            <div class="row" style="margin-bottom:10px">
+              <div class="inp grow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>Search name, ID or phone</div>
+              <span class="btn" style="border-color:var(--accent);color:var(--accent);background:var(--accent-soft)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 3H2l8 9.5V19l4 2v-8.5z"/></svg>Advanced filter · 3</span>
+              <span class="btn">Columns</span>
+            </div>
+            <div class="filters">
+              <div class="fgrid">
+                <div><span class="lbl">Department</span><div class="inp val">Operations, Finance <span style="margin-left:auto">▾</span></div></div>
+                <div><span class="lbl">Designation</span><div class="inp">Any <span style="margin-left:auto">▾</span></div></div>
+                <div><span class="lbl">Contract</span><div class="inp val">Fixed term <span style="margin-left:auto">▾</span></div></div>
+                <div><span class="lbl">Status</span><div class="inp val">Active <span style="margin-left:auto">▾</span></div></div>
+                <div><span class="lbl">Joining date</span><div class="inp">From – To</div></div>
+                <div><span class="lbl">Rate</span><div class="inp">Min – Max</div></div>
+              </div>
+              <div class="row" style="margin-top:10px;justify-content:space-between">
+                <div class="row"><span class="chip">Department: Operations, Finance ✕</span><span class="chip">Contract: Fixed term ✕</span><span class="chip">Status: Active ✕</span></div>
+                <div class="row"><span class="btn ghost sm">Save as view</span><span class="btn ghost sm">Clear all</span><span class="btn pri sm">Apply</span></div>
+              </div>
+            </div>
+            <div class="tbl scroll-x">
+              <table>
+                <thead><tr><th style="width:30px"><span class="cb"></span></th><th>No</th><th>Employee</th><th>Designation</th><th>Department</th><th>Joining date</th><th>Contract</th><th class="num">Rate</th><th>Status</th><th></th></tr></thead>
+                <tbody>
+                  <tr><td><span class="cb"></span></td><td class="mono">1</td><td><div class="who"><span class="av a1">SC</span><div><b>Sophea Chan</b><small>EMP-0001</small></div></div></td><td>Operations Manager</td><td>Operations</td><td>12 Mar 2019</td><td>Unlimited</td><td class="num">$1,850 / mo</td><td><span class="pill p-ok">Active</span></td><td>⋯</td></tr>
+                  <tr><td><span class="cb"></span></td><td class="mono">2</td><td><div class="who"><span class="av a2">VK</span><div><b>Vanna Kem</b><small>EMP-0014</small></div></div></td><td>Senior Accountant</td><td>Finance</td><td>04 Aug 2021</td><td>Fixed term · Dec 2026</td><td class="num">$1,200 / mo</td><td><span class="pill p-ok">Active</span></td><td>⋯</td></tr>
+                  <tr><td><span class="cb"></span></td><td class="mono">3</td><td><div class="who"><span class="av a3">RP</span><div><b>Rithy Pov</b><small>EMP-0027</small></div></div></td><td>Site Supervisor</td><td>Operations</td><td>19 Jan 2022</td><td>Fixed term · Nov 2026</td><td class="num">$780 / mo</td><td><span class="pill p-warn">Probation</span></td><td>⋯</td></tr>
+                  <tr><td><span class="cb"></span></td><td class="mono">4</td><td><div class="who"><span class="av a4">MN</span><div><b>Malis Nuon</b><small>EMP-0031</small></div></div></td><td>Payroll Officer</td><td>Finance</td><td>02 May 2022</td><td>Fixed term · Jan 2027</td><td class="num">$640 / mo</td><td><span class="pill p-ok">Active</span></td><td>⋯</td></tr>
+                  <tr><td><span class="cb"></span></td><td class="mono">5</td><td><div class="who"><span class="av a5">DS</span><div><b>Dara Sok</b><small>EMP-0042</small></div></div></td><td>Driver</td><td>Operations</td><td>21 Sep 2023</td><td>Daily rate</td><td class="num">$14 / day</td><td><span class="pill p-info">On leave</span></td><td>⋯</td></tr>
+                </tbody>
+              </table>
+              <div class="pager"><span>Showing 1–5 of 38 results · <span style="color:var(--fg)">25 per page ▾</span></span><div class="pg"><span>‹</span><span class="on">1</span><span>2</span><span>3</span><span>…</span><span>8</span><span>›</span></div></div>
+            </div>
+          </div>
+        </div>
+      </div></div>
+    </div>
+    <div class="notes">
+      <div class="box"><h4>List</h4><ul><li><b>No</b> is the row number on the current page, separate from the employee ID.</li><li>Paging, sorting and filtering run on the server, so it stays fast at thousands of rows.</li><li>Page size 10, 25, 50, 100.</li><li>Row menu: View, Edit, Change status, Delete (soft delete).</li></ul></div>
+      <div class="box"><h4>Advanced filter</h4><ul><li>Multi-select for department, designation, contract, status.</li><li>Ranges for joining date and rate.</li><li>Active filters show as removable chips.</li><li>Save a filter as a named view.</li></ul></div>
+      <div class="box"><h4>Import and export</h4><ul><li><b>Export</b> downloads .xlsx or .csv of the current filtered result, or the selected rows.</li><li><b>Import</b> uses a downloadable template, validates every row first, shows errors per row, then commits.</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ EMPLOYEE FORM ============ -->
+<section class="pane" id="p-form" hidden>
+  <div class="split">
+    <div class="win">
+      <div class="win-bar"><i></i><i></i><i></i><span>/employees/EMP-0014</span></div>
+      <div class="content">
+        <div class="ph"><div><span class="crumb">Employees ›</span><h3>Vanna Kem</h3></div><div class="row"><span class="btn">Cancel</span><span class="btn pri">Save changes</span></div></div>
+        <div class="row" style="gap:20px;align-items:flex-start;margin-bottom:6px">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:8px"><div class="photo">VK</div><span class="btn sm">Upload photo</span><small style="color:var(--muted);font-size:11px">JPG or PNG, max 2 MB</small></div>
+          <div class="grow" style="min-width:220px"><div class="row" style="gap:8px;margin-bottom:6px"><span class="pill p-ok">Active</span><span class="chip">Finance</span><span class="chip">Senior Accountant</span></div><p style="color:var(--muted);font-size:12.5px">EMP-0014 · Joined 04 Aug 2021 · 5 yr 2 mo with the company</p></div>
+        </div>
+        <div class="tabs2"><span class="on">Personal</span><span>Job</span><span>Contract and rate</span><span>Documents</span><span>Attendance</span><span>History</span></div>
+        <div class="two">
+          <div><span class="lbl">Full name (English)</span><div class="inp val">Vanna Kem</div></div>
+          <div><span class="lbl">Full name (Khmer)</span><div class="inp val">វណ្ណា កែម</div></div>
+          <div><span class="lbl">Gender</span><div class="inp val">Female <span style="margin-left:auto">▾</span></div></div>
+          <div><span class="lbl">Date of birth</span><div class="inp val">14 Feb 1992</div></div>
+          <div><span class="lbl">Phone</span><div class="inp val">+855 12 345 678</div></div>
+          <div><span class="lbl">Email</span><div class="inp val">vanna.kem@company.com</div></div>
+          <div><span class="lbl">National ID</span><div class="inp val">0101 2345 678</div></div>
+          <div><span class="lbl">ZKTeco PIN</span><div class="inp val mono">1014</div></div>
+        </div>
+        <div class="sec-title">Contract and rate (second tab)</div>
+        <div class="two">
+          <div><span class="lbl">Contract type</span><div class="inp val">Fixed term <span style="margin-left:auto">▾</span></div></div>
+          <div><span class="lbl">Contract end</span><div class="inp val">31 Dec 2026</div></div>
+          <div><span class="lbl">Rate</span><div class="inp val">1,200.00</div></div>
+          <div><span class="lbl">Rate basis</span><div class="inp val">Per month <span style="margin-left:auto">▾</span></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="notes">
+      <div class="box"><h4>Profile picture</h4><ul><li>Upload, crop to square, replace or remove.</li><li>Shown as an avatar in the list, falls back to initials.</li><li>Stored as files, only the path is in the database.</li></ul></div>
+      <div class="box"><h4>Fields</h4><ul><li>Everything from the list is editable here.</li><li>ZKTeco PIN links the person to their device punches.</li><li>Rate changes keep history with effective date.</li><li>Rate is visible only to Admin and HR.</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ATTENDANCE ============ -->
+<section class="pane" id="p-att" hidden>
+  <div class="split">
+    <div class="win">
+      <div class="win-bar"><i></i><i></i><i></i><span>/attendance/devices</span></div>
+      <div class="content">
+        <div class="ph"><div><h3>Attendance sync</h3><p>ZKTeco devices · running in <b>mock mode</b></p></div><div class="row"><span class="btn">Add device</span><span class="btn pri">Sync all now</span></div></div>
+        <div class="cards" style="margin-bottom:16px">
+          <div class="dev"><div class="row" style="justify-content:space-between"><b>Head office – Main door</b><span class="pill p-ok">Online</span></div>
+            <div class="mono" style="font-size:12px;color:var(--muted)">ZKTeco SpeedFace-V5L · 192.168.1.201:4370</div>
+            <div class="stat"><div><b>96</b>users</div><div><b>412</b>punches today</div><div><b>10:42</b>last sync</div></div>
+            <div class="row"><span class="btn sm">Sync now</span><span class="btn sm ghost">Test connection</span></div></div>
+          <div class="dev"><div class="row" style="justify-content:space-between"><b>Warehouse – Gate</b><span class="pill p-bad">Offline</span></div>
+            <div class="mono" style="font-size:12px;color:var(--muted)">ZKTeco K40 · 192.168.2.15:4370</div>
+            <div class="stat"><div><b>41</b>users</div><div><b>0</b>punches today</div><div><b>Yesterday 18:05</b>last sync</div></div>
+            <div class="row"><span class="btn sm">Retry</span><span class="btn sm ghost">Test connection</span></div></div>
+        </div>
+        <div class="row" style="justify-content:space-between;margin-bottom:8px"><b>Recent punches</b><span class="row"><span class="chip">Today ▾</span><span class="chip">All devices ▾</span></span></div>
+        <div class="tbl scroll-x"><table>
+          <thead><tr><th>Time</th><th>PIN</th><th>Employee</th><th>Device</th><th>Type</th><th>Match</th></tr></thead>
+          <tbody>
+            <tr><td class="mono">10:41:08</td><td class="mono">1014</td><td>Vanna Kem</td><td>Main door</td><td>Check in</td><td><span class="pill p-ok">Matched</span></td></tr>
+            <tr><td class="mono">10:38:52</td><td class="mono">1001</td><td>Sophea Chan</td><td>Main door</td><td>Check in</td><td><span class="pill p-ok">Matched</span></td></tr>
+            <tr><td class="mono">10:31:20</td><td class="mono">2088</td><td>—</td><td>Main door</td><td>Check in</td><td><span class="pill p-warn">Unknown PIN</span></td></tr>
+            <tr><td class="mono">08:02:44</td><td class="mono">1027</td><td>Rithy Pov</td><td>Main door</td><td>Check in</td><td><span class="pill p-ok">Matched</span></td></tr>
+          </tbody></table></div>
+        <div class="sec-title">Sync log</div>
+        <div class="tbl scroll-x"><table>
+          <thead><tr><th>Started</th><th>Device</th><th class="num">Records</th><th>Result</th></tr></thead>
+          <tbody>
+            <tr><td class="mono">10:42</td><td>Main door</td><td class="num">38</td><td><span class="pill p-ok">Success</span></td></tr>
+            <tr><td class="mono">10:42</td><td>Warehouse gate</td><td class="num">0</td><td><span class="pill p-bad">Timeout</span></td></tr>
+          </tbody></table></div>
+      </div>
+    </div>
+    <div class="notes">
+      <div class="box"><h4>How the mock works</h4><ul><li>A mock device generates realistic punches for your sample employees.</li><li>Sync button, schedule, log and unmatched-PIN handling are all real.</li><li>Swapping to a physical device means writing one adapter, no screen changes.</li></ul></div>
+      <div class="box"><h4>Real device options</h4><ul><li><b>Push (ADMS):</b> device posts punches to our server. Best for many sites.</li><li><b>Pull:</b> server connects to the device IP on port 4370. Needs network reach to the device.</li></ul></div>
+      <div class="box"><h4>Next step after sync</h4><ul><li>Punches become daily records: first in, last out, late, early, absent.</li><li>Shifts from masterdata drive those rules.</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ MASTERDATA ============ -->
+<section class="pane" id="p-master" hidden>
+  <div class="split">
+    <div class="win">
+      <div class="win-bar"><i></i><i></i><i></i><span>/masterdata/departments</span></div>
+      <div class="content">
+        <div class="ph"><div><h3>Masterdata</h3><p>Lookup lists used across the system</p></div></div>
+        <div class="row" style="gap:6px;margin-bottom:14px">
+          <span class="chip" style="background:var(--fg);color:var(--bg)">Departments</span><span class="chip" style="background:var(--surface2);color:var(--muted)">Designations</span><span class="chip" style="background:var(--surface2);color:var(--muted)">Contract types</span><span class="chip" style="background:var(--surface2);color:var(--muted)">Employee statuses</span><span class="chip" style="background:var(--surface2);color:var(--muted)">Locations</span><span class="chip" style="background:var(--surface2);color:var(--muted)">Shifts</span><span class="chip" style="background:var(--surface2);color:var(--muted)">Holidays</span>
+        </div>
+        <div class="row" style="margin-bottom:10px"><div class="inp grow">Search departments</div><span class="btn pri">Add department</span></div>
+        <div class="tbl scroll-x"><table>
+          <thead><tr><th>Code</th><th>Name</th><th>Head</th><th class="num">Employees</th><th>Active</th><th></th></tr></thead>
+          <tbody>
+            <tr><td class="mono">OPS</td><td>Operations</td><td>Sophea Chan</td><td class="num">112</td><td><span class="pill p-ok">Yes</span></td><td>Edit · Deactivate</td></tr>
+            <tr><td class="mono">FIN</td><td>Finance</td><td>Vanna Kem</td><td class="num">18</td><td><span class="pill p-ok">Yes</span></td><td>Edit · Deactivate</td></tr>
+            <tr><td class="mono">HR</td><td>Human Resources</td><td>—</td><td class="num">6</td><td><span class="pill p-ok">Yes</span></td><td>Edit · Deactivate</td></tr>
+            <tr><td class="mono">IT</td><td>IT</td><td>—</td><td class="num">9</td><td><span class="pill p-ok">Yes</span></td><td>Edit · Deactivate</td></tr>
+            <tr><td class="mono">OLD</td><td>Legacy Projects</td><td>—</td><td class="num">0</td><td><span class="pill p-mute">No</span></td><td>Edit · Activate</td></tr>
+          </tbody></table></div>
+      </div>
+    </div>
+    <div class="notes">
+      <div class="box"><h4>One screen, many lists</h4><ul><li>Every list uses the same table and add/edit dialog, so a new list is cheap to add.</li><li>Items in use can be deactivated but not deleted, so history stays correct.</li><li>Department supports a parent, for a tree.</li></ul></div>
+      <div class="box"><h4>Initial lists</h4><ul><li>Department, Designation</li><li>Contract type (Unlimited, Fixed term, Daily, Probation)</li><li>Employee status (Active, Probation, On leave, Resigned, Terminated)</li><li>Location, Shift, Holiday</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SETTINGS ============ -->
+<section class="pane" id="p-settings" hidden>
+  <div class="split">
+    <div class="win">
+      <div class="win-bar"><i></i><i></i><i></i><span>/settings/company</span></div>
+      <div class="content">
+        <div class="ph"><div><h3>Settings</h3><p>Company profile</p></div><span class="btn pri">Save</span></div>
+        <div class="row" style="gap:6px;margin-bottom:14px">
+          <span class="chip" style="background:var(--fg);color:var(--bg)">Company</span><span class="chip" style="background:var(--surface2);color:var(--muted)">Users and roles</span><span class="chip" style="background:var(--surface2);color:var(--muted)">Attendance rules</span><span class="chip" style="background:var(--surface2);color:var(--muted)">Numbering</span><span class="chip" style="background:var(--surface2);color:var(--muted)">Import templates</span><span class="chip" style="background:var(--surface2);color:var(--muted)">My account</span>
+        </div>
+        <div class="two">
+          <div><span class="lbl">Company name</span><div class="inp val">Your Company Co., Ltd.</div></div>
+          <div><span class="lbl">Default currency</span><div class="inp val">USD <span style="margin-left:auto">▾</span></div></div>
+          <div><span class="lbl">Language</span><div class="inp val">English <span style="margin-left:auto">▾</span></div></div>
+          <div><span class="lbl">Time zone</span><div class="inp val">Asia/Phnom_Penh <span style="margin-left:auto">▾</span></div></div>
+          <div><span class="lbl">Employee ID format</span><div class="inp val mono">EMP-{0000}</div></div>
+          <div><span class="lbl">Work week</span><div class="inp val">Mon – Sat <span style="margin-left:auto">▾</span></div></div>
+        </div>
+        <div class="sec-title">Users and roles (preview)</div>
+        <div class="tbl scroll-x"><table>
+          <thead><tr><th>User</th><th>Role</th><th>Last login</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td>admin@company.com</td><td>Admin</td><td>Today 09:12</td><td><span class="pill p-ok">Active</span></td></tr>
+            <tr><td>hr@company.com</td><td>HR</td><td>Yesterday</td><td><span class="pill p-ok">Active</span></td></tr>
+            <tr><td>ops.mgr@company.com</td><td>Manager</td><td>3 days ago</td><td><span class="pill p-warn">Invited</span></td></tr>
+          </tbody></table></div>
+      </div>
+    </div>
+    <div class="notes">
+      <div class="box"><h4>Roles</h4><ul><li><b>Admin:</b> everything, including users and devices.</li><li><b>HR:</b> employees, rate, masterdata, attendance.</li><li><b>Manager:</b> read own department, no rate.</li><li><b>Employee:</b> own profile and attendance.</li></ul></div>
+      <div class="box"><h4>Also here</h4><ul><li>Import templates to download.</li><li>Attendance rules: grace minutes, late and absent thresholds.</li><li>Change own password and photo.</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ DATA MODEL ============ -->
+<section class="pane" id="p-data" hidden>
+  <p class="lede">PostgreSQL tables. Highlighted ones come from your brief; the rest support them. Lookup lists share a common shape (id, code, name, active).</p>
+  <div class="erd">
+    <div class="ent"><h4 class="core">employees</h4><ul><li><b>id</b> uuid</li><li>employee_no <span class="tag">unique</span></li><li>name_en, name_km</li><li>photo_path</li><li>department_id → departments</li><li>designation_id → designations</li><li>joining_date</li><li>contract_type_id → contract_types</li><li>contract_end_date</li><li>rate_amount, rate_basis, currency</li><li>status_id → employee_statuses</li><li>zk_pin <span class="tag">unique</span></li><li>phone, email, dob, gender, national_id</li><li>deleted_at, created_at</li></ul></div>
+    <div class="ent"><h4 class="core">departments</h4><ul><li><b>id</b>, code, name</li><li>parent_id → departments</li><li>head_employee_id</li><li>is_active</li></ul></div>
+    <div class="ent"><h4 class="core">designations</h4><ul><li><b>id</b>, code, name</li><li>department_id (optional)</li><li>is_active</li></ul></div>
+    <div class="ent"><h4 class="core">contract_types</h4><ul><li><b>id</b>, code, name</li><li>requires_end_date</li><li>default_rate_basis</li></ul></div>
+    <div class="ent"><h4 class="core">employee_statuses</h4><ul><li><b>id</b>, code, name</li><li>color</li><li>counts_as_active</li></ul></div>
+    <div class="ent"><h4>rate_history</h4><ul><li><b>id</b>, employee_id</li><li>amount, basis, currency</li><li>effective_from</li><li>changed_by</li></ul></div>
+    <div class="ent"><h4>locations · shifts · holidays</h4><ul><li>locations: name, address</li><li>shifts: start, end, grace_min</li><li>holidays: date, name</li></ul></div>
+    <div class="ent"><h4>users</h4><ul><li><b>id</b>, email <span class="tag">unique</span></li><li>password_hash</li><li>role</li><li>employee_id (optional)</li><li>locked_until, last_login</li></ul></div>
+    <div class="ent"><h4>devices</h4><ul><li><b>id</b>, name, model</li><li>ip, port, serial_no</li><li>location_id</li><li>mode (mock, pull, push)</li><li>last_sync_at, status</li></ul></div>
+    <div class="ent"><h4>attendance_punches</h4><ul><li><b>id</b>, device_id</li><li>pin, punched_at</li><li>type, verify_mode</li><li>employee_id (null if unknown)</li><li>unique(device_id, pin, punched_at)</li></ul></div>
+    <div class="ent"><h4>attendance_daily</h4><ul><li><b>id</b>, employee_id, date</li><li>first_in, last_out, worked_min</li><li>late_min, early_min</li><li>state (present, absent, leave…)</li></ul></div>
+    <div class="ent"><h4>sync_logs · audit_logs</h4><ul><li>sync: device, started, count, result, error</li><li>audit: user, action, entity, before/after</li></ul></div>
+  </div>
+</section>
+
+<!-- ============ EXTRAS ============ -->
+<section class="pane" id="p-more" hidden>
+  <p class="lede">Suggestions beyond your brief, grouped by phase. Phase 1 is what you listed. Tell me which of the others to include.</p>
+  <div class="phase">
+    <div class="card"><h4>Phase 1 · Core <span class="pill p-ok">Your brief</span></h4><ul><li>Login and roles</li><li>Employee list, filter, paging</li><li>Import and export</li><li>Profile picture</li><li>Masterdata</li><li>Attendance sync (mock)</li><li>Settings</li></ul></div>
+    <div class="card"><h4>Phase 2 · Daily use <span class="pill p-info">Suggested</span></h4><ul><li>Dashboard: headcount, joiners, leavers, by department</li><li>Contract expiry alerts (30, 60, 90 days)</li><li>Probation end reminders</li><li>Attendance daily view and monthly report</li><li>Employee documents (contract scans, ID)</li><li>Audit log of who changed what</li></ul></div>
+    <div class="card"><h4>Phase 3 · Processes <span class="pill p-info">Suggested</span></h4><ul><li>Leave types, balances, request and approval</li><li>Shifts, overtime and roster</li><li>Org chart</li><li>Payroll preparation export (attendance + rate)</li><li>Employee self-service portal</li></ul></div>
+    <div class="card"><h4>Later <span class="pill p-mute">Optional</span></h4><ul><li>Real ZKTeco device connection</li><li>Khmer and English interface</li><li>Email and Telegram notifications</li><li>Recruitment and onboarding checklist</li><li>Asset assignment, training records</li></ul></div>
+  </div>
+</section>
+
+<!-- ============ TO CONFIRM ============ -->
+<section class="pane" id="p-ask" hidden>
+  <p class="lede">The answers shape the build. My default is in bold, so a quick “go with defaults” is a valid reply.</p>
+  <div class="q">
+    <div class="card"><span class="n">01</span><div><b>What does “Rate” mean?</b><p>Default: an amount plus a basis (per month, per day, per hour) so monthly staff and daily workers fit the same column. Alternatively a single monthly salary only.</p></div></div>
+    <div class="card"><span class="n">02</span><div><b>“No” column</b><p>Default: row number on the page. Alternative: the employee ID shown as No.</p></div></div>
+    <div class="card"><span class="n">03</span><div><b>Who uses it, and with which roles?</b><p>Default: Admin, HR, Manager, Employee as on the Settings screen. Tell me if you only need Admin and HR.</p></div></div>
+    <div class="card"><span class="n">04</span><div><b>Languages and currency</b><p>Default: English interface, Khmer name field on the profile, USD with optional KHR. Full Khmer UI can be Phase 3.</p></div></div>
+    <div class="card"><span class="n">05</span><div><b>ZKTeco model and network</b><p>Default: mock now. For the real step I need the device model, how many sites, and whether devices can reach a server (push) or the server can reach them (pull).</p></div></div>
+    <div class="card"><span class="n">06</span><div><b>Import and export format</b><p>Default: .xlsx with a template, plus .csv export.</p></div></div>
+    <div class="card"><span class="n">07</span><div><b>Hosting and email</b><p>Default: runs on a local PostgreSQL and photos on disk. For password reset emails I need an SMTP account later.</p></div></div>
+    <div class="card"><span class="n">08</span><div><b>Visual style</b><p>Default: the clean shadcn look shown here, teal accent, light and dark themes. Share a brand colour or logo to use instead.</p></div></div>
+  </div>
+</section>
+</div>
+
+<script>
+(function(){
+  var tabs=[].slice.call(document.querySelectorAll('#tabs button'));
+  function show(id){
+    tabs.forEach(function(b){b.setAttribute('aria-selected',b.dataset.t===id)});
+    [].slice.call(document.querySelectorAll('section.pane')).forEach(function(s){s.hidden=(s.id!=='p-'+id)});
+    try{localStorage.setItem('pd-tab',id)}catch(e){}
+  }
+  tabs.forEach(function(b){b.addEventListener('click',function(){show(b.dataset.t)})});
+  var s=null;try{s=localStorage.getItem('pd-tab')}catch(e){}
+  if(s&&document.getElementById('p-'+s))show(s);
+})();
+</script>

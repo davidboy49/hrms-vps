@@ -1,0 +1,15 @@
+node_modules
+.next
+.git
+.env
+.env.*
+.pgdata
+.pgdev.log
+.dev.log
+.vercel
+.vercel-login.log
+.neon
+.claude
+docs
+public/uploads
+*.log

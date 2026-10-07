@@ -1,0 +1,475 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  HR
+  MANAGER
+  EMPLOYEE
+}
+
+enum RateBasis {
+  MONTH
+  DAY
+  HOUR
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum RequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum DayKind {
+  WORK
+  OFF
+}
+
+enum RosterKind {
+  WORK
+  OFF
+  LEAVE
+}
+
+enum QrMode {
+  ROTATING
+  STATIC
+}
+
+enum DeviceMode {
+  MOCK
+  PULL
+  PUSH
+  QR
+}
+
+enum DeviceStatus {
+  ONLINE
+  OFFLINE
+}
+
+enum PunchType {
+  IN
+  OUT
+}
+
+enum DailyState {
+  PRESENT
+  LATE
+  ABSENT
+  INCOMPLETE
+}
+
+model User {
+  id            String         @id @default(cuid())
+  email         String         @unique
+  name          String
+  passwordHash  String
+  role          Role           @default(HR)
+  isActive      Boolean        @default(true)
+  failedLogins  Int            @default(0)
+  tokenVersion  Int            @default(0)
+  lockedUntil   DateTime?
+  lastLoginAt   DateTime?
+  employeeId    String?        @unique
+  employee      Employee?      @relation(fields: [employeeId], references: [id])
+  createdAt     DateTime       @default(now())
+  auditLogs     AuditLog[]
+  announcements Announcement[]
+}
+
+model Department {
+  id           String        @id @default(cuid())
+  code         String        @unique
+  name         String
+  parentId     String?
+  parent       Department?   @relation("DeptTree", fields: [parentId], references: [id])
+  children     Department[]  @relation("DeptTree")
+  isActive     Boolean       @default(true)
+  employees    Employee[]
+  designations Designation[]
+}
+
+model Designation {
+  id           String      @id @default(cuid())
+  code         String      @unique
+  name         String
+  departmentId String?
+  department   Department? @relation(fields: [departmentId], references: [id])
+  isActive     Boolean     @default(true)
+  employees    Employee[]
+}
+
+model ContractType {
+  id               String     @id @default(cuid())
+  code             String     @unique
+  name             String
+  requiresEndDate  Boolean    @default(false)
+  defaultRateBasis RateBasis  @default(MONTH)
+  isActive         Boolean    @default(true)
+  employees        Employee[]
+}
+
+model EmployeeStatus {
+  id             String     @id @default(cuid())
+  code           String     @unique
+  name           String
+  color          String     @default("gray")
+  countsAsActive Boolean    @default(true)
+  isActive       Boolean    @default(true)
+  employees      Employee[]
+}
+
+model Location {
+  id        String     @id @default(cuid())
+  code      String     @unique
+  name      String
+  address   String?
+  latitude  Float?
+  longitude Float?
+  radiusM   Int        @default(150)
+  qrMode    QrMode     @default(STATIC)
+  qrVersion Int        @default(1)
+  isActive  Boolean    @default(true)
+  devices   Device[]
+  employees Employee[]
+}
+
+model Shift {
+  id            String                @id @default(cuid())
+  code          String                @unique
+  name          String
+  startTime     String // HH:mm
+  endTime       String // HH:mm
+  graceMin      Int                   @default(10)
+  colour        String                @default("blue")
+  isActive      Boolean               @default(true)
+  templateDays  ScheduleTemplateDay[]
+  rosterEntries RosterEntry[]
+  employees     Employee[]
+}
+
+model Holiday {
+  id       String   @id @default(cuid())
+  code     String   @unique
+  name     String
+  date     DateTime @db.Date
+  isActive Boolean  @default(true)
+}
+
+model Employee {
+  id                 String             @id @default(cuid())
+  employeeNo         String             @unique
+  nameEn             String
+  nameKm             String?
+  photoUrl           String?
+  gender             Gender?
+  dob                DateTime?          @db.Date
+  phone              String?
+  email              String?
+  nationalId         String?
+  address            String?
+  departmentId       String
+  department         Department         @relation(fields: [departmentId], references: [id])
+  designationId      String
+  designation        Designation        @relation(fields: [designationId], references: [id])
+  contractTypeId     String
+  contractType       ContractType       @relation(fields: [contractTypeId], references: [id])
+  statusId           String
+  status             EmployeeStatus     @relation(fields: [statusId], references: [id])
+  locationId         String?
+  location           Location?          @relation(fields: [locationId], references: [id])
+  shiftId            String?
+  shift              Shift?             @relation(fields: [shiftId], references: [id])
+  scheduleTemplateId String?
+  scheduleTemplate   ScheduleTemplate?  @relation(fields: [scheduleTemplateId], references: [id], onDelete: SetNull)
+  rosterEntries      RosterEntry[]
+  joiningDate        DateTime           @db.Date
+  contractEnd        DateTime?          @db.Date
+  leavingDate        DateTime?          @db.Date
+  rateAmount         Decimal            @db.Decimal(12, 2)
+  rateBasis          RateBasis          @default(MONTH)
+  currency           String             @default("USD")
+  zkPin              String?            @unique
+  deletedAt          DateTime?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  rateHistory        RateHistory[]
+  transfers          BranchTransfer[]
+  user               User?
+  punches            AttendancePunch[]
+  daily              AttendanceDaily[]
+  leaveEntitlements  LeaveEntitlement[]
+  leaveRequests      LeaveRequest[]
+  overtimeRequests   OvertimeRequest[]
+
+  @@index([departmentId])
+  @@index([designationId])
+  @@index([statusId])
+  @@index([joiningDate])
+  @@index([deletedAt])
+}
+
+model RateHistory {
+  id            String    @id @default(cuid())
+  employeeId    String
+  employee      Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  amount        Decimal   @db.Decimal(12, 2)
+  basis         RateBasis
+  currency      String
+  effectiveFrom DateTime  @db.Date
+  changedBy     String?
+  createdAt     DateTime  @default(now())
+}
+
+/// One row each time an employee is assigned or moved to another branch (Location). Names are copied so history survives renames.
+model BranchTransfer {
+  id            String   @id @default(cuid())
+  employeeId    String
+  employee      Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  fromName      String?
+  toName        String?
+  effectiveFrom DateTime @db.Date
+  changedBy     String?
+  createdAt     DateTime @default(now())
+
+  @@index([employeeId])
+}
+
+model Device {
+  id         String            @id @default(cuid())
+  name       String
+  model      String?
+  ip         String?
+  port       Int               @default(4370)
+  serialNo   String?
+  mode       DeviceMode        @default(MOCK)
+  status     DeviceStatus      @default(ONLINE)
+  locationId String?
+  location   Location?         @relation(fields: [locationId], references: [id])
+  lastSyncAt DateTime?
+  isActive   Boolean           @default(true)
+  punches    AttendancePunch[]
+  syncLogs   SyncLog[]
+}
+
+model AttendancePunch {
+  id         String    @id @default(cuid())
+  deviceId   String
+  device     Device    @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  pin        String
+  punchedAt  DateTime
+  type       PunchType @default(IN)
+  lat        Float?
+  lng        Float?
+  accuracyM  Int?
+  distanceM  Int?
+  employeeId String?
+  employee   Employee? @relation(fields: [employeeId], references: [id])
+
+  @@unique([deviceId, pin, punchedAt])
+  @@index([punchedAt])
+  @@index([employeeId])
+}
+
+model AttendanceDaily {
+  id         String     @id @default(cuid())
+  employeeId String
+  employee   Employee   @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  date       DateTime   @db.Date
+  firstIn    DateTime?
+  lastOut    DateTime?
+  workedMin  Int        @default(0)
+  lateMin    Int        @default(0)
+  state      DailyState @default(PRESENT)
+
+  @@unique([employeeId, date])
+  @@index([date])
+}
+
+model SyncLog {
+  id        String   @id @default(cuid())
+  deviceId  String
+  device    Device   @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  startedAt DateTime @default(now())
+  records   Int      @default(0)
+  ok        Boolean
+  message   String?
+}
+
+model Setting {
+  key   String @id
+  value String
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  action    String
+  entity    String
+  entityId  String?
+  detail    String?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+/// Fixed-window counters for rate limiting (shared across serverless instances).
+model RateLimit {
+  key         String   @id
+  windowStart DateTime @default(now())
+  count       Int      @default(1)
+}
+
+/// Messages from HR to everyone. Shown in the app, and optionally sent to the Telegram group.
+model Announcement {
+  id             String    @id @default(cuid())
+  title          String
+  body           String
+  authorId       String?
+  author         User?     @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  createdAt      DateTime  @default(now())
+  expiresAt      DateTime?
+  sentToTelegram Boolean   @default(false)
+
+  @@index([createdAt])
+}
+
+/// A weekly pattern: for each weekday either a working shift or a day off.
+/// A "personal" template is created behind the scenes when HR sets one employee's weekly days off.
+model ScheduleTemplate {
+  id         String                @id @default(cuid())
+  name       String
+  isActive   Boolean               @default(true)
+  isPersonal Boolean               @default(false)
+  createdAt  DateTime              @default(now())
+  days       ScheduleTemplateDay[]
+  employees  Employee[]
+}
+
+model ScheduleTemplateDay {
+  id         String           @id @default(cuid())
+  templateId String
+  template   ScheduleTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  /// 0 = Sunday ... 6 = Saturday
+  weekday    Int
+  kind       DayKind          @default(WORK)
+  /// empty means "the employee's own shift"
+  shiftId    String?
+  shift      Shift?           @relation(fields: [shiftId], references: [id], onDelete: SetNull)
+
+  @@unique([templateId, weekday])
+}
+
+/// A change for one employee on one date: a different shift, a day off, or leave. It beats the weekly template and holidays.
+model RosterEntry {
+  id             String     @id @default(cuid())
+  employeeId     String
+  employee       Employee   @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  date           DateTime   @db.Date
+  kind           RosterKind
+  shiftId        String?
+  shift          Shift?     @relation(fields: [shiftId], references: [id], onDelete: SetNull)
+  note           String?
+  /// set when an approved leave request created this entry, so cancelling the leave removes exactly these days
+  leaveRequestId String?
+  createdAt      DateTime   @default(now())
+
+  @@unique([employeeId, date])
+  @@index([leaveRequestId])
+  @@index([date])
+}
+
+model LeaveType {
+  id           String             @id @default(cuid())
+  code         String             @unique
+  name         String
+  /// unpaid leave is still recorded; payroll will use this later
+  isPaid       Boolean            @default(true)
+  /// yearly allowance in days; empty means no limit
+  daysPerYear  Float?
+  isActive     Boolean            @default(true)
+  requests     LeaveRequest[]
+  entitlements LeaveEntitlement[]
+}
+
+/// A per-person yearly allowance that replaces the type's default.
+model LeaveEntitlement {
+  id          String    @id @default(cuid())
+  employeeId  String
+  employee    Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  leaveTypeId String
+  leaveType   LeaveType @relation(fields: [leaveTypeId], references: [id], onDelete: Cascade)
+  year        Int
+  days        Float
+
+  @@unique([employeeId, leaveTypeId, year])
+}
+
+model LeaveRequest {
+  id           String        @id @default(cuid())
+  employeeId   String
+  employee     Employee      @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  leaveTypeId  String
+  leaveType    LeaveType     @relation(fields: [leaveTypeId], references: [id])
+  fromDate     DateTime      @db.Date
+  toDate       DateTime      @db.Date
+  /// working days inside the range (days off and holidays are not counted)
+  days         Float
+  reason       String?
+  status       RequestStatus @default(PENDING)
+  requestedBy  String?
+  decidedBy    String?
+  decidedAt    DateTime?
+  decisionNote String?
+  createdAt    DateTime      @default(now())
+
+  @@index([employeeId])
+  @@index([status])
+  @@index([fromDate])
+}
+
+model OvertimeType {
+  id         String            @id @default(cuid())
+  code       String            @unique
+  name       String
+  /// pay multiplier, for example 1.5 for time and a half
+  multiplier Float             @default(1.5)
+  isActive   Boolean           @default(true)
+  requests   OvertimeRequest[]
+}
+
+model OvertimeRequest {
+  id             String        @id @default(cuid())
+  employeeId     String
+  employee       Employee      @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  overtimeTypeId String
+  overtimeType   OvertimeType  @relation(fields: [overtimeTypeId], references: [id])
+  date           DateTime      @db.Date
+  hours          Float
+  reason         String?
+  status         RequestStatus @default(PENDING)
+  requestedBy    String?
+  decidedBy      String?
+  decidedAt      DateTime?
+  decisionNote   String?
+  createdAt      DateTime      @default(now())
+
+  @@index([employeeId])
+  @@index([status])
+  @@index([date])
+}
