@@ -1,0 +1,13 @@
+[Unit]
+Description=Send error logs to Telegram
+After=docker.service
+Requires=docker.service
+
+[Service]
+# change /opt/hrms-vps if the repo lives elsewhere
+ExecStart=/bin/bash /opt/hrms-vps/deploy/logwatch.sh
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

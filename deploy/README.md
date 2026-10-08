@@ -105,6 +105,31 @@ docker compose exec -T db pg_restore -U peopledesk -d peopledesk --clean --if-ex
 
 This pulls the latest code, rebuilds and restarts. Database migrations run on start.
 
+## Logs and alerts
+
+**Live log viewer (Dozzle).** `docker compose up -d dozzle` starts it. It shows the logs of every container with search, and is only reachable from the server itself. From your own computer:
+
+```bash
+ssh -L 8080:127.0.0.1:8080 user@your-vps
+```
+
+then open http://localhost:8080. (It reads the Docker socket, so keep it off the public internet.)
+
+**Telegram error alerts.**
+
+1. In Telegram, message `@BotFather`, send `/newbot` and copy the token.
+2. Send any message to your new bot, then open `https://api.telegram.org/bot<TOKEN>/getUpdates` and copy the `chat` `id`.
+3. Put them in the repo's `.env`: `LOGWATCH_BOT_TOKEN=` and `LOGWATCH_CHAT_ID=`.
+4. Install the service (edit the two paths in the unit file first if the repo is not in `/opt/hrms-vps`):
+
+```bash
+sudo cp deploy/logwatch.service /etc/systemd/system/
+sudo systemctl enable --now logwatch
+sudo systemctl status logwatch
+```
+
+It sends lines containing error, fail, exception, fatal, panic or an HTTP 5xx. To match more (or less), set `LOGWATCH_PATTERN` in `.env` (an extended regex). Messages are limited to about one per second, so a burst of errors cannot flood the chat. Docker keeps only the last 3 x 10 MB of logs per container.
+
 ## 9. Switching over from Vercel
 
 1. Announce a short break outside working hours.
