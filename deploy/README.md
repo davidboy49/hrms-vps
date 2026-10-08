@@ -105,6 +105,36 @@ docker compose exec -T db pg_restore -U peopledesk -d peopledesk --clean --if-ex
 
 This pulls the latest code, rebuilds and restarts. Database migrations run on start.
 
+## Automatic deploy (GitHub Actions)
+
+Every pull request is checked (lint and build). Every merge to `main` is checked again and then deployed: GitHub connects to the server over SSH and runs `deploy/deploy.sh`, which backs up first if the update changes the database, runs `update.sh`, and waits until the app is healthy. A failed check stops the deploy, and a failed deploy turns the run red (GitHub emails you). The "CI and deploy" workflow can also be started by hand from the Actions tab.
+
+One-time setup:
+
+1. On the server, make a key just for this (no passphrase). Add it to the user that owns the repo, **limited to one command** so a stolen key can do nothing else:
+
+```bash
+ssh-keygen -t ed25519 -N "" -C github-deploy -f ~/.ssh/github_deploy
+echo "command=\"cd $HOME/hrms-vps && ./deploy/deploy.sh\",restrict $(cat ~/.ssh/github_deploy.pub)" >> ~/.ssh/authorized_keys
+cat ~/.ssh/github_deploy        # the private key, for the secret below
+ssh-keyscan -t ed25519 localhost 2>/dev/null | sed 's/^localhost/YOUR_SERVER_IP_OR_NAME/'   # for VPS_KNOWN_HOSTS
+```
+
+2. In GitHub: repository **Settings → Secrets and variables → Actions → New repository secret**:
+
+| Secret | Value |
+|---|---|
+| `VPS_HOST` | the server's address (the one you SSH to; it must be reachable from the internet) |
+| `VPS_USER` | the user, for example `ubuntu` |
+| `VPS_PORT` | optional, only if SSH is not on 22 |
+| `VPS_SSH_KEY` | the whole private key printed above, including the BEGIN and END lines |
+| `VPS_KNOWN_HOSTS` | the line printed by `ssh-keyscan` (it pins the server, so nobody can pretend to be it) |
+
+3. The server's repo must be on `main` and `./deploy/backup.sh` must work for that user (see section 7). Test by hand first: `./deploy/deploy.sh`.
+4. Optional but recommended: **Settings → Branches → protect `main`** and require the "check" job, so nothing reaches the server without passing the checks.
+
+If a deploy goes wrong: revert the bad merge on GitHub (the "Revert" button on the merged pull request) and merge the revert, and the same pipeline deploys the old code again. Database changes are not undone by a revert; if you must go back, restore the pre-update backup from `/var/backups/peopledesk` (made automatically when an update changes the database).
+
 ## Logs and alerts
 
 **Live log viewer (Dozzle).** `docker compose up -d dozzle` starts it. It shows the logs of every container with search, and is only reachable from the server itself. From your own computer:
