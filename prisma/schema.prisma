@@ -81,6 +81,8 @@ model User {
   lastLoginAt   DateTime?
   employeeId    String?        @unique
   employee      Employee?      @relation(fields: [employeeId], references: [id])
+  /// sidebar favourite links (paths), saved per person
+  favorites     String[]       @default([])
   createdAt     DateTime       @default(now())
   auditLogs     AuditLog[]
   announcements Announcement[]

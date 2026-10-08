@@ -2,13 +2,14 @@
 
 import Link from "next/link"
 import { usePathname, useSearchParams } from "next/navigation"
-import { useMemo, useState, useSyncExternalStore } from "react"
+import { useEffect, useState } from "react"
 import { useTheme } from "next-themes"
 import { BookOpen, CalendarOff, ChevronDown, Clock, Timer, Database, Megaphone, LayoutDashboard, LogOut, Menu, Moon, Pin, PinOff, Settings, Star, Sun, Users } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet"
 import { logout } from "@/app/login/actions"
+import { saveFavorites } from "@/app/(app)/favorites-action"
 import { initials } from "@/lib/format"
 import { can, type Permission } from "@/lib/permissions"
 import { useT } from "@/i18n/provider"
@@ -69,24 +70,7 @@ const NAV: NavEntry[] = [
 ]
 
 const PIN_COOKIE = "pd_sidebar"
-const FAV_KEY = "pd_favorites"
-const FAV_EVENT = "pd-favorites"
-
-function readFavs() {
-  try {
-    return localStorage.getItem(FAV_KEY) ?? "[]"
-  } catch {
-    return "[]"
-  }
-}
-function subscribeFavs(cb: () => void) {
-  window.addEventListener(FAV_EVENT, cb)
-  window.addEventListener("storage", cb)
-  return () => {
-    window.removeEventListener(FAV_EVENT, cb)
-    window.removeEventListener("storage", cb)
-  }
-}
+const LEGACY_FAV_KEY = "pd_favorites" // favourites used to live in the browser; moved to the user record
 
 function Brand({ company, logoUrl, compact }: { company: string; logoUrl: string; compact?: boolean }) {
   return (
@@ -112,7 +96,7 @@ function Brand({ company, logoUrl, compact }: { company: string; logoUrl: string
   )
 }
 
-function Nav({ perms, onNavigate, compact }: { perms: readonly string[]; onNavigate?: () => void; compact?: boolean }) {
+function Nav({ perms, favs, onToggleFav, onNavigate, compact }: { perms: readonly string[]; favs: string[]; onToggleFav: (href: string) => void; onNavigate?: () => void; compact?: boolean }) {
   const t = useT()
   const path = usePathname()
   const params = useSearchParams()
@@ -134,23 +118,7 @@ function Nav({ perms, onNavigate, compact }: { perms: readonly string[]; onNavig
   // groups the person has opened or closed by hand; otherwise the group with the current page is open
   const [manual, setManual] = useState<Record<string, boolean>>({})
 
-  // favourite links, remembered in this browser only
-  const favRaw = useSyncExternalStore(subscribeFavs, readFavs, () => "[]")
-  const favs = useMemo<string[]>(() => {
-    try {
-      const v = JSON.parse(favRaw)
-      return Array.isArray(v) ? v.filter((x) => typeof x === "string") : []
-    } catch {
-      return []
-    }
-  }, [favRaw])
-  const toggleFav = (href: string) => {
-    const next = favs.includes(href) ? favs.filter((h) => h !== href) : [...favs, href]
-    try {
-      localStorage.setItem(FAV_KEY, JSON.stringify(next))
-    } catch {}
-    window.dispatchEvent(new Event(FAV_EVENT))
-  }
+  const toggleFav = onToggleFav
   const star = (href: string, cls?: string) => {
     const on = favs.includes(href)
     const label = t(on ? "nav.removeFavorite" : "nav.addFavorite")
@@ -279,10 +247,34 @@ function Nav({ perms, onNavigate, compact }: { perms: readonly string[]; onNavig
   )
 }
 
-export function AppShell({ user, company, logoUrl, initialPinned, notice, children }: { user: U; company: string; logoUrl: string; initialPinned: boolean; notice?: React.ReactNode; children: React.ReactNode }) {
+export function AppShell({ user, company, logoUrl, initialPinned, initialFavorites, notice, children }: { user: U; company: string; logoUrl: string; initialPinned: boolean; initialFavorites: string[]; notice?: React.ReactNode; children: React.ReactNode }) {
   const t = useT()
   const [open, setOpen] = useState(false)
   const [pinned, setPinned] = useState(initialPinned)
+  // favourite links, saved on the user's account
+  const [favs, setFavs] = useState<string[]>(initialFavorites)
+  const toggleFav = (href: string) => {
+    const next = favs.includes(href) ? favs.filter((h) => h !== href) : [...favs, href]
+    setFavs(next)
+    void saveFavorites(next)
+  }
+  // one-time move of favourites that were saved in this browser, if the account has none yet
+  useEffect(() => {
+    try {
+      const old = localStorage.getItem(LEGACY_FAV_KEY)
+      if (old === null) return
+      localStorage.removeItem(LEGACY_FAV_KEY)
+      const v = JSON.parse(old)
+      if (initialFavorites.length === 0 && Array.isArray(v)) {
+        const list = v.filter((x): x is string => typeof x === "string")
+        if (list.length) {
+          setFavs(list)
+          void saveFavorites(list)
+        }
+      }
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
   const [hover, setHover] = useState(false)
   const { resolvedTheme, setTheme } = useTheme()
   const expanded = pinned || hover
@@ -333,7 +325,7 @@ export function AppShell({ user, company, logoUrl, initialPinned, notice, childr
             )}
           </div>
           <div className="-mx-1 min-h-0 flex-1 overflow-y-auto overscroll-contain px-1">
-            <Nav perms={user.perms} compact={!expanded} />
+            <Nav perms={user.perms} favs={favs} onToggleFav={toggleFav} compact={!expanded} />
           </div>
         </div>
       </aside>
@@ -345,7 +337,7 @@ export function AppShell({ user, company, logoUrl, initialPinned, notice, childr
             <Brand company={company} logoUrl={logoUrl} />
           </div>
           <div className="-mx-1 min-h-0 flex-1 overflow-y-auto overscroll-contain px-1">
-            <Nav perms={user.perms} onNavigate={() => setOpen(false)} />
+            <Nav perms={user.perms} favs={favs} onToggleFav={toggleFav} onNavigate={() => setOpen(false)} />
           </div>
         </SheetContent>
       </Sheet>
