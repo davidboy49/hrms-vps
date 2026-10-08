@@ -65,7 +65,9 @@ export async function botInfo(token: string) {
 /** Chats the bot has recently seen, so the admin can pick the group instead of typing an ID. */
 export async function recentChats(token: string) {
   type Chat = { id: number; title?: string; first_name?: string; type: string }
-  const r = await api<{ message?: { chat: Chat }; my_chat_member?: { chat: Chat } }[]>(token, "getUpdates", { limit: 100, allowed_updates: ["message", "my_chat_member"] })
+  // Telegram returns the oldest unread updates first and we never mark them read, so a bot with a backlog would only ever show its oldest
+  // chats. A negative offset asks for the newest 100 instead.
+  const r = await api<{ message?: { chat: Chat }; my_chat_member?: { chat: Chat } }[]>(token, "getUpdates", { offset: -100, limit: 100, allowed_updates: ["message", "my_chat_member"] })
   if (!r.ok) return r
   const seen = new Map<number, { id: number; title: string; type: string }>()
   for (const u of r.result) {
