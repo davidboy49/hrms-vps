@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- seed helper takes any Prisma model delegate */
 import { PrismaClient, RateBasis } from "@prisma/client"
 import bcrypt from "bcryptjs"
 

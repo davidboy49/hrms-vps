@@ -15,6 +15,11 @@ ARG DATABASE_URL=postgresql://build:build@localhost:5432/build
 ENV DATABASE_URL=$DATABASE_URL DATABASE_URL_UNPOOLED=$DATABASE_URL NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
+# Shown to Admin and HR in the sidebar. Set after the build so they do not bust its cache. deploy/update.sh passes them in.
+ARG GIT_SHA=dev
+ARG BUILD_DATE=
+ENV APP_COMMIT=$GIT_SHA APP_BUILT=$BUILD_DATE
+
 ENV NODE_ENV=production
 RUN chown -R node:node .next
 USER node

@@ -6,6 +6,8 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 ./deploy/backup.sh
 git pull --ff-only
+# baked into the image and shown to Admin and HR in the sidebar
+export GIT_SHA="$(git rev-parse --short HEAD)" BUILD_DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 docker compose up -d --build
 docker image prune -f >/dev/null
 docker compose ps

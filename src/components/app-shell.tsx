@@ -247,7 +247,7 @@ function Nav({ perms, favs, onToggleFav, onNavigate, compact }: { perms: readonl
   )
 }
 
-export function AppShell({ user, company, logoUrl, initialPinned, initialFavorites, notice, children }: { user: U; company: string; logoUrl: string; initialPinned: boolean; initialFavorites: string[]; notice?: React.ReactNode; children: React.ReactNode }) {
+export function AppShell({ user, company, logoUrl, initialPinned, initialFavorites, version, notice, children }: { user: U; company: string; logoUrl: string; initialPinned: boolean; initialFavorites: string[]; version?: string | null; notice?: React.ReactNode; children: React.ReactNode }) {
   const t = useT()
   const [open, setOpen] = useState(false)
   const [pinned, setPinned] = useState(initialPinned)
@@ -268,6 +268,8 @@ export function AppShell({ user, company, logoUrl, initialPinned, initialFavorit
       if (initialFavorites.length === 0 && Array.isArray(v)) {
         const list = v.filter((x): x is string => typeof x === "string")
         if (list.length) {
+          // one-time import from the old browser storage; it has to run after mount because localStorage does not exist on the server
+          // eslint-disable-next-line react-hooks/set-state-in-effect
           setFavs(list)
           void saveFavorites(list)
         }
@@ -323,6 +325,7 @@ export function AppShell({ user, company, logoUrl, initialPinned, initialFavorit
           <div className="-mx-1 min-h-0 flex-1 overflow-y-auto overscroll-contain px-1">
             <Nav perms={user.perms} favs={favs} onToggleFav={toggleFav} compact={!expanded} />
           </div>
+          {version && expanded && <p className="shrink-0 truncate pt-2 font-mono text-[10px] text-muted-foreground" title={version}>{version}</p>}
         </div>
       </aside>
 
@@ -337,6 +340,7 @@ export function AppShell({ user, company, logoUrl, initialPinned, initialFavorit
           <div className="-mx-1 min-h-0 flex-1 overflow-y-auto overscroll-contain px-1">
             <Nav perms={user.perms} favs={favs} onToggleFav={toggleFav} onNavigate={() => setOpen(false)} />
           </div>
+          {version && <p className="shrink-0 truncate pt-2 font-mono text-[10px] text-muted-foreground" title={version}>{version}</p>}
         </SheetContent>
       </Sheet>
 

@@ -4,6 +4,7 @@ import { can, requireUser } from "@/lib/session"
 import { getBranding } from "@/lib/branding"
 import { AppShell } from "@/components/app-shell"
 import { SubscriptionBanner } from "@/components/subscription-banner"
+import { versionLabel } from "@/lib/version"
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await requireUser()
@@ -17,6 +18,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       logoUrl={brand.logoUrl}
       initialPinned={initialPinned}
       initialFavorites={row?.favorites ?? []}
+      version={user.roleIsSystem && (user.role === "ADMIN" || user.role === "HR") ? versionLabel() : null}
       notice={can(user, "settings.view") ? <SubscriptionBanner /> : null}
     >
       {children}
