@@ -4,11 +4,11 @@ import Link from "next/link"
 import { usePathname, useSearchParams } from "next/navigation"
 import { useEffect, useState } from "react"
 import { useTheme } from "next-themes"
-import { BookOpen, CalendarOff, ChevronDown, Clock, Timer, Database, Megaphone, LayoutDashboard, LogOut, Menu, Moon, Pin, PinOff, Settings, Star, Sun, Users } from "lucide-react"
+import { BookOpen, CalendarOff, ChevronDown, Clock, Timer, Database, Megaphone, LayoutDashboard, Menu, Moon, Pin, PinOff, Settings, Star, Sun, Users } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet"
-import { logout } from "@/app/login/actions"
+import { SignOutButton } from "@/components/sign-out-button"
 import { saveFavorites } from "@/app/(app)/favorites-action"
 import { initials } from "@/lib/format"
 import { can, type Permission } from "@/lib/permissions"
@@ -359,11 +359,7 @@ export function AppShell({ user, company, logoUrl, initialPinned, initialFavorit
               <p className="text-xs text-muted-foreground">{user.roleIsSystem ? t(`role.${user.role}`) : user.roleName}</p>
             </div>
           </div>
-          <form action={logout}>
-            <Button variant="ghost" size="icon" type="submit" aria-label={t("nav.signOut")}>
-              <LogOut />
-            </Button>
-          </form>
+          <SignOutButton iconOnly />
         </header>
         {notice}
         <main className="min-w-0 flex-1 p-4 md:p-6">{children}</main>

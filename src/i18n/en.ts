@@ -42,6 +42,8 @@ export const en: Dict = {
   "nav.removeFavorite": "Remove from favorites",
   "nav.settings": "Settings",
   "nav.signOut": "Sign out",
+  "nav.signOutConfirm": "Sign out?",
+  "nav.signOutConfirmDesc": "Are you sure you want to sign out?",
   "nav.toggleTheme": "Toggle theme",
 
   // ---- roles, gender, statuses, contracts, units

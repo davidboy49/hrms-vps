@@ -42,6 +42,8 @@ export const km: Dict = {
   "nav.removeFavorite": "ដកចេញពីចំណូលចិត្ត",
   "nav.settings": "ការកំណត់",
   "nav.signOut": "ចាកចេញ",
+  "nav.signOutConfirm": "ចាកចេញ?",
+  "nav.signOutConfirmDesc": "តើអ្នកប្រាកដថាចង់ចាកចេញមែនទេ?",
   "nav.toggleTheme": "ប្តូរពណ៌ផ្ទាំង",
 
   // ---- roles, gender, statuses, contracts, units
