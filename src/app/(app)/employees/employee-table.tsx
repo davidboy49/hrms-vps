@@ -181,6 +181,7 @@ export function EmployeeTable({
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem render={<Link href={`/employees/${r.id}`} />}>{t("common.view")}</DropdownMenuItem>
                     {canEdit && <DropdownMenuItem render={<Link href={`/employees/${r.id}/edit`} />}>{t("common.edit")}</DropdownMenuItem>}
+                    {canEdit && <DropdownMenuItem render={<Link href={`/employees/new?from=${r.id}`} />}>{t("emp.copy")}</DropdownMenuItem>}
                     {canEdit && <DropdownMenuSeparator />}
                     {canEdit && (
                       <DropdownMenuItem variant="destructive" onClick={() => setConfirm([r.id])}>
