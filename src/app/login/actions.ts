@@ -68,6 +68,9 @@ export async function login(_: LoginState, form: FormData): Promise<LoginState> 
     return generic
   }
 
+  // a temporary password from a bulk create stops working after a while; HR resets it
+  if (user.mustChangePassword && user.tempPasswordExpiresAt && user.tempPasswordExpiresAt < new Date()) return { error: t("login.err.tempExpired") }
+
   // an Admin switched on two-factor for this person: no session yet, they still have to enter an authenticator code
   if (user.totpRequired) {
     await beginTwoFactor({ uid: user.id, days: sessionDays(permsOf(user.role), remember), next })
@@ -77,6 +80,8 @@ export async function login(_: LoginState, form: FormData): Promise<LoginState> 
   await db.user.update({ where: { id: user.id }, data: { failedLogins: 0, lockedUntil: null, lastLoginAt: new Date() } })
   await createSession({ id: user.id, tokenVersion: user.tokenVersion }, sessionDays(permsOf(user.role), remember))
   await audit(user.id, "login", "User", user.id, `ip ${ip}`)
+  // first sign-in with a temporary password: choose their own before anything else
+  if (user.mustChangePassword) redirect("/change-password")
   redirect(next ?? (permsOf(user.role).includes("employees.view") ? "/employees" : "/scan"))
 }
 

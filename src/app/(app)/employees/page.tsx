@@ -60,6 +60,7 @@ export default async function EmployeesPage({ searchParams }: { searchParams: Pr
           opts={{ departments: opt(lk.departments), designations: opt(lk.designations), contractTypes: optCoded("contract")(lk.contractTypes), statuses: optCoded("status")(lk.statuses) }}
           canEdit={canEdit}
           canExport={canEdit}
+          canLogins={can(user, "users.createBatch")}
         />
         <EmployeeTable rows={rows} total={total} page={page} size={size} sort={sortKey} dir={dir} canEdit={canEdit} showRate={canEdit} canExport={canEdit} />
       </div>

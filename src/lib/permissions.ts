@@ -11,7 +11,7 @@ export const PERMISSION_GROUPS = [
   { group: "leave", perms: ["leave.viewAll", "leave.manage", "overtime.viewAll", "overtime.manage"] },
   { group: "announcements", perms: ["announcements.manage"] },
   { group: "masterdata", perms: ["masterdata.view", "masterdata.edit", "masterdata.delete"] },
-  { group: "settings", perms: ["settings.view", "settings.manage", "settings.notifications", "users.manage", "roles.manage", "audit.view"] },
+  { group: "settings", perms: ["settings.view", "settings.manage", "settings.notifications", "users.manage", "users.createBatch", "roles.manage", "audit.view"] },
 ] as const
 
 export type Permission = (typeof PERMISSION_GROUPS)[number]["perms"][number]
@@ -23,7 +23,7 @@ const MANAGER: Permission[] = ["dashboard.view", "alerts.view", "employees.view"
 const HR: Permission[] = [
   ...MANAGER,
   "employees.edit", "employees.import", "employees.export", "attendance.manage", "attendance.export", "roster.edit", "qr.manage",
-  "leave.manage", "overtime.manage", "announcements.manage", "masterdata.view", "masterdata.edit", "settings.view",
+  "leave.manage", "overtime.manage", "announcements.manage", "masterdata.view", "masterdata.edit", "settings.view", "users.createBatch",
 ]
 
 /** The four roles every install starts with. Same access as the old fixed roles. */

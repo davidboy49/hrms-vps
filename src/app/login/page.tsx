@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation"
-import { getSession } from "@/lib/session"
+import { getPendingPasswordUser, getSession } from "@/lib/session"
 import { LoginForm } from "./login-form"
 import { LoginArt } from "./login-art"
 import { LanguageSwitcher } from "@/components/language-switcher"
@@ -14,6 +14,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   const { next } = await searchParams
   const t = await getT()
   const brand = await getBranding()
+  if (await getPendingPasswordUser()) redirect("/change-password")
   // already signed in (and still allowed in): skip the form
   if (await getSession()) redirect(typeof next === "string" && next.startsWith("/") && !next.startsWith("//") ? next : "/")
   return (

@@ -70,25 +70,40 @@ export async function destroySession() {
   jar.delete(COOKIE)
 }
 
-/**
- * The signed-in user, or null. Checked against the database on every request (once per request),
- * so disabling a user, changing their role or resetting their password takes effect immediately.
- */
-export const getSession = cache(async (): Promise<SessionUser | null> => {
+/** The signed-in user as stored, with the flag that says they still have to choose their own password. */
+const loadSession = cache(async (): Promise<{ user: SessionUser; mustChange: boolean } | null> => {
   const jar = await cookies()
   const claims = await decrypt(jar.get(COOKIE)?.value)
   if (!claims) return null
   const u = await db.user.findUnique({
     where: { id: claims.id },
-    select: { id: true, username: true, email: true, name: true, isActive: true, tokenVersion: true, role: { select: { key: true, name: true, isSystem: true, permissions: true } } },
+    select: { id: true, username: true, email: true, name: true, isActive: true, tokenVersion: true, mustChangePassword: true, role: { select: { key: true, name: true, isSystem: true, permissions: true } } },
   })
   if (!u || !u.isActive || u.tokenVersion !== claims.v) return null
-  return { id: u.id, username: u.username, email: u.email, name: u.name, role: u.role.key ?? u.role.name, roleName: u.role.name, roleIsSystem: u.role.isSystem, perms: permsOf(u.role) }
+  const user: SessionUser = { id: u.id, username: u.username, email: u.email, name: u.name, role: u.role.key ?? u.role.name, roleName: u.role.name, roleIsSystem: u.role.isSystem, perms: permsOf(u.role) }
+  return { user, mustChange: u.mustChangePassword }
 })
+
+/**
+ * The signed-in user, or null. Checked against the database on every request (once per request),
+ * so disabling a user, changing their role or resetting their password takes effect immediately.
+ * Someone who still has to replace a temporary password counts as not signed in everywhere except the change-password page,
+ * so they cannot reach any data or action (even by calling it directly) until they have chosen their own password.
+ */
+export const getSession = cache(async (): Promise<SessionUser | null> => {
+  const s = await loadSession()
+  return s && !s.mustChange ? s.user : null
+})
+
+/** Only for the change-password page and its action: a signed-in user who must still replace a temporary password. */
+export async function getPendingPasswordUser(): Promise<SessionUser | null> {
+  const s = await loadSession()
+  return s?.mustChange ? s.user : null
+}
 
 export async function requireUser() {
   const u = await getSession()
-  if (!u) redirect("/login")
+  if (!u) redirect((await getPendingPasswordUser()) ? "/change-password" : "/login")
   return u
 }
 

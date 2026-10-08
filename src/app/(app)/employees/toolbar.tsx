@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { useEffect, useMemo, useRef, useState } from "react"
-import { Bookmark, Download, Filter, Plus, Search, Upload, X } from "lucide-react"
+import { Bookmark, Download, Filter, KeyRound, Plus, Search, Upload, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -18,7 +18,7 @@ const KEYS = ["dept", "desig", "contract", "status", "joinFrom", "joinTo", "rate
 
 const csv = (s: string | null) => (s ? s.split(",").filter(Boolean) : [])
 
-export function Toolbar({ opts, canEdit, canExport }: { opts: Opts; canEdit: boolean; canExport: boolean }) {
+export function Toolbar({ opts, canEdit, canExport, canLogins }: { opts: Opts; canEdit: boolean; canExport: boolean; canLogins: boolean }) {
   const t = useT()
   const { sp, set } = useQueryParams()
   const [q, setQ] = useState(sp.get("q") ?? "")
@@ -157,6 +157,11 @@ export function Toolbar({ opts, canEdit, canExport }: { opts: Opts; canEdit: boo
             <DropdownMenuItem onClick={saveView}>{t("views.save")}</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+        {canLogins && (
+          <Button variant="outline" render={<Link href="/employees/logins" />}>
+            <KeyRound /> {t("bl.open")}
+          </Button>
+        )}
         {canEdit && (
           <Button variant="outline" onClick={() => setImportOpen(true)}>
             <Upload /> {t("common.import")}
