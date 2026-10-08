@@ -1,5 +1,7 @@
 # Running PeopleDesk on your own VPS
 
+> Day-to-day operation (deploys, rollback, restore, keys, remote database access): see [RUNBOOK.md](RUNBOOK.md).
+
 This runs PeopleDesk in Docker on one server: the app, Postgres, private photo storage (RustFS) and Caddy for HTTPS.
 If you are moving from the Vercel and Neon version, that one keeps working while you set this up. Treat the VPS as a second copy until you switch over.
 
