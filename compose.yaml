@@ -25,7 +25,7 @@ services:
 
   # private photo storage: RustFS, an S3-compatible store (the volume keeps its old name "miniodata" so existing photos stay)
   rustfs:
-    image: rustfs/rustfs:latest
+    image: rustfs/rustfs@sha256:1803faef57627e2d9c2e7d89d655d712ddded5389040054987163043fecb6a3c
     restart: unless-stopped
     user: "0:0"
     command: ["/data"]
@@ -45,7 +45,7 @@ services:
 
   # creates the private "uploads" bucket once, then exits
   rustfs-init:
-    image: amazon/aws-cli:latest
+    image: amazon/aws-cli@sha256:3dacc5db57c923c4223e949795f538ecf1f2212b2b7d5a028b47b97f91564c0d
     depends_on:
       rustfs: { condition: service_healthy }
     restart: "no"

@@ -1,26 +1,7 @@
-# Local changes: host nginx terminates TLS (Caddy disabled, app on loopback only),
-# and RustFS replaces MinIO (MinIO images are no longer published).
+# Local changes: host nginx terminates TLS (Caddy disabled, app on loopback only).
 services:
   caddy:
     profiles: ["caddy"]
   app:
     ports:
       - "127.0.0.1:3000:3000"
-  minio:
-    image: rustfs/rustfs@sha256:1803faef57627e2d9c2e7d89d655d712ddded5389040054987163043fecb6a3c
-    user: "0:0"
-    command: ["/data"]
-    environment:
-      RUSTFS_ACCESS_KEY: ${MINIO_ROOT_USER}
-      RUSTFS_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
-      RUSTFS_ADDRESS: ":9000"
-      RUSTFS_VOLUMES: /data
-    healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:9000/health || exit 1"]
-  minio-init:
-    image: amazon/aws-cli@sha256:3dacc5db57c923c4223e949795f538ecf1f2212b2b7d5a028b47b97f91564c0d
-    environment:
-      AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER}
-      AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD}
-      AWS_DEFAULT_REGION: us-east-1
-    entrypoint: ["sh", "-c", "aws --endpoint-url http://minio:9000 s3api head-bucket --bucket uploads 2>/dev/null || aws --endpoint-url http://minio:9000 s3api create-bucket --bucket uploads"]
