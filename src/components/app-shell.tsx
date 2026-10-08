@@ -303,13 +303,9 @@ export function AppShell({ user, company, logoUrl, initialPinned, initialFavorit
           )}
         >
           <div className="mb-4 flex items-center justify-between gap-1 px-0.5">
-            {can(user, "settings.manage") && expanded ? (
-              <Link href="/settings?tab=company" className="min-w-0 rounded-lg hover:opacity-80" title={t("shell.editCompany")}>
-                <Brand company={company} logoUrl={logoUrl} />
-              </Link>
-            ) : (
+            <Link href="/" className="min-w-0 rounded-lg hover:opacity-80" title={t("nav.dashboard")}>
               <Brand company={company} logoUrl={logoUrl} compact={!expanded} />
-            )}
+            </Link>
             {expanded && (
               <Button
                 variant="ghost"
@@ -334,7 +330,9 @@ export function AppShell({ user, company, logoUrl, initialPinned, initialFavorit
         <SheetContent side="left" className="flex w-64 flex-col p-3">
           <SheetTitle className="sr-only">{t("nav.navigation")}</SheetTitle>
           <div className="mb-4 px-0.5">
-            <Brand company={company} logoUrl={logoUrl} />
+            <Link href="/" onClick={() => setOpen(false)} className="block rounded-lg hover:opacity-80" title={t("nav.dashboard")}>
+              <Brand company={company} logoUrl={logoUrl} />
+            </Link>
           </div>
           <div className="-mx-1 min-h-0 flex-1 overflow-y-auto overscroll-contain px-1">
             <Nav perms={user.perms} favs={favs} onToggleFav={toggleFav} onNavigate={() => setOpen(false)} />
