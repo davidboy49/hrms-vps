@@ -1,4 +1,4 @@
-# PeopleDesk on one VPS: app + Postgres + private photo storage (MinIO) + Caddy for HTTPS.
+# PeopleDesk on one VPS: app + Postgres + private photo storage (RustFS) + Caddy for HTTPS.
 # Only Caddy publishes ports (80 and 443). The database and storage are reachable only from the other containers.
 # Copy deploy/env.example to .env, fill it in, then:  docker compose up -d --build
 
@@ -23,49 +23,51 @@ services:
       retries: 10
     logging: *logs
 
-  minio:
-    image: minio/minio:latest
+  # private photo storage: RustFS, an S3-compatible store (the volume keeps its old name "miniodata" so existing photos stay)
+  rustfs:
+    image: rustfs/rustfs@sha256:1803faef57627e2d9c2e7d89d655d712ddded5389040054987163043fecb6a3c
     restart: unless-stopped
-    command: server /data
+    user: "0:0"
+    command: ["/data"]
     environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?set MINIO_ROOT_USER in .env}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?set MINIO_ROOT_PASSWORD in .env}
+      RUSTFS_ACCESS_KEY: ${MINIO_ROOT_USER:?set MINIO_ROOT_USER in .env}
+      RUSTFS_SECRET_KEY: ${MINIO_ROOT_PASSWORD:?set MINIO_ROOT_PASSWORD in .env}
+      RUSTFS_ADDRESS: ":9000"
+      RUSTFS_VOLUMES: /data
     volumes:
       - miniodata:/data
     healthcheck:
-      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/9000'"]
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:9000/health || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 10
     logging: *logs
 
   # creates the private "uploads" bucket once, then exits
-  minio-init:
-    image: minio/mc:latest
+  rustfs-init:
+    image: amazon/aws-cli@sha256:3dacc5db57c923c4223e949795f538ecf1f2212b2b7d5a028b47b97f91564c0d
     depends_on:
-      minio: { condition: service_healthy }
+      rustfs: { condition: service_healthy }
     restart: "no"
     environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
-    entrypoint: >
-      sh -c "mc alias set local http://minio:9000 $$MINIO_ROOT_USER $$MINIO_ROOT_PASSWORD &&
-             mc mb --ignore-existing local/uploads &&
-             mc anonymous set none local/uploads"
+      AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER}
+      AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD}
+      AWS_DEFAULT_REGION: us-east-1
+    entrypoint: ["sh", "-c", "aws --endpoint-url http://rustfs:9000 s3api head-bucket --bucket uploads 2>/dev/null || aws --endpoint-url http://rustfs:9000 s3api create-bucket --bucket uploads"]
 
   app:
     build: .
     restart: unless-stopped
     depends_on:
       db: { condition: service_healthy }
-      minio-init: { condition: service_completed_successfully }
+      rustfs-init: { condition: service_completed_successfully }
     environment:
       DATABASE_URL: postgresql://peopledesk:${POSTGRES_PASSWORD}@db:5432/peopledesk?schema=public
       DATABASE_URL_UNPOOLED: postgresql://peopledesk:${POSTGRES_PASSWORD}@db:5432/peopledesk?schema=public
       AUTH_SECRET: ${AUTH_SECRET:?set AUTH_SECRET in .env}
       CRON_SECRET: ${CRON_SECRET:?set CRON_SECRET in .env}
       ADMS_TOKEN: ${ADMS_TOKEN:-}
-      AWS_ENDPOINT_URL_S3: http://minio:9000
+      AWS_ENDPOINT_URL_S3: http://rustfs:9000
       AWS_REGION: us-east-1
       AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER}
       AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD}
@@ -97,7 +99,7 @@ services:
 
   # live log viewer for every container; reachable only from the server itself (use an SSH tunnel, see deploy/README.md)
   dozzle:
-    image: amir20/dozzle:latest
+    image: amir20/dozzle@sha256:a7d69d20891d3dcc82636e24afa4c1c162b41d0673ef798b14f09e6b69accc5a
     restart: unless-stopped
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro

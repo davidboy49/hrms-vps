@@ -3,7 +3,7 @@
 HR system: employees, attendance (QR and ZKTeco), schedules, leave, overtime, Telegram alerts, announcements, dashboard.
 Next.js 16 (App Router), shadcn/ui, Tailwind, PostgreSQL with Prisma. Khmer first, English second.
 
-This repo runs on one VPS with Docker Compose: the app, Postgres, private photo storage (MinIO) and Caddy for HTTPS.
+This repo runs on one VPS with Docker Compose: the app, Postgres, private photo storage (RustFS) and Caddy for HTTPS.
 
 **Install and operate it: see [deploy/README.md](deploy/README.md).**
 

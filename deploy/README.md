@@ -1,6 +1,6 @@
 # Running PeopleDesk on your own VPS
 
-This runs PeopleDesk in Docker on one server: the app, Postgres, private photo storage (MinIO) and Caddy for HTTPS.
+This runs PeopleDesk in Docker on one server: the app, Postgres, private photo storage (RustFS) and Caddy for HTTPS.
 If you are moving from the Vercel and Neon version, that one keeps working while you set this up. Treat the VPS as a second copy until you switch over.
 
 Server: Ubuntu 22.04 or 24.04, 2 vCPU, 4 GB RAM, SSD. Singapore is a good place for Cambodian users.
@@ -64,7 +64,7 @@ docker compose exec db pg_restore -U peopledesk -d peopledesk --clean --if-exist
 docker compose restart app
 ```
 
-Photos: employee photos and the logo are the same `s3:<key>` references, so copy the files with the MinIO client:
+Photos: employee photos and the logo are the same `s3:<key>` references, so copy the files with the MinIO client (`mc`, it works with any S3 store):
 
 ```bash
 # on the VPS, with the Neon bucket details from your .env.local
@@ -74,7 +74,7 @@ docker run --rm --network host -it --entrypoint sh minio/mc -c '
   mc mirror neon/uploads vps/uploads'
 ```
 
-(MinIO's port is not published by default. For this one copy, add `ports: ["127.0.0.1:9000:9000"]` to the `minio` service, run the command, then remove it.)
+(The storage port is not published by default. For this one copy, add `ports: ["127.0.0.1:9000:9000"]` to the `rustfs` service, run the command, then remove it.)
 
 ## 6. Scheduled job (missing check-out report)
 

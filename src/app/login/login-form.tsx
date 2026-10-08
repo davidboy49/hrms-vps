@@ -1,6 +1,6 @@
 "use client"
 
-import { useActionState, useState } from "react"
+import { useActionState, useEffect, useRef, useState } from "react"
 import { Eye, EyeOff, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -12,17 +12,23 @@ export function LoginForm({ next = "" }: { next?: string }) {
   const t = useT()
   const [state, action, pending] = useActionState(login, {})
   const [show, setShow] = useState(false)
+  // React clears uncontrolled fields after a form action, so keep the username in state and refocus the password after a failed attempt
+  const [username, setUsername] = useState("")
+  const passwordRef = useRef<HTMLInputElement>(null)
+  useEffect(() => {
+    if (state.error) passwordRef.current?.focus()
+  }, [state])
   return (
     <form action={action} className="space-y-4">
       <input type="hidden" name="next" value={next} />
       <div className="space-y-1.5">
         <Label htmlFor="username">{t("login.username")}</Label>
-        <Input id="username" name="username" type="text" autoComplete="username" autoCapitalize="none" autoCorrect="off" spellCheck={false} required autoFocus />
+        <Input id="username" name="username" type="text" autoComplete="username" autoCapitalize="none" autoCorrect="off" spellCheck={false} required autoFocus value={username} onChange={(e) => setUsername(e.target.value)} />
       </div>
       <div className="space-y-1.5">
         <Label htmlFor="password">{t("login.password")}</Label>
         <div className="relative">
-          <Input id="password" name="password" type={show ? "text" : "password"} autoComplete="current-password" required className="pr-9" />
+          <Input ref={passwordRef} id="password" name="password" type={show ? "text" : "password"} autoComplete="current-password" required className="pr-9" />
           <button
             type="button"
             onClick={() => setShow((s) => !s)}

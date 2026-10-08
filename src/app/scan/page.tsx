@@ -5,7 +5,7 @@ import { db } from "@/lib/db"
 import { getSession, can } from "@/lib/session"
 import { QR_REASON_KEY, resolveQr, suggestedType } from "@/lib/qr-attendance"
 import { fmtDateTime } from "@/lib/format"
-import { logout } from "@/app/login/actions"
+import { SignOutButton } from "@/components/sign-out-button"
 import { Button } from "@/components/ui/button"
 import { ScanClient } from "./scan-client"
 import { ActiveAnnouncements } from "@/components/active-announcements"
@@ -50,11 +50,7 @@ export default async function ScanPage({ searchParams }: { searchParams: Promise
               {t("nav.dashboard")}
             </Button>
           )}
-          <form action={logout}>
-            <Button variant="ghost" size="sm" type="submit">
-              {t("nav.signOut")}
-            </Button>
-          </form>
+          <SignOutButton />
         </div>
       </header>
 

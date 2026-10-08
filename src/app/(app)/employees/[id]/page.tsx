@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import { Pencil } from "lucide-react"
+import { Copy, Pencil } from "lucide-react"
 import { db } from "@/lib/db"
 import { requirePerm, can } from "@/lib/session"
 import { BASIS_KEY, fmtDate, fmtRate, fmtTime } from "@/lib/format"
@@ -74,9 +74,14 @@ export default async function EmployeePage({ params }: { params: Promise<{ id: s
           </p>
         </div>
         {canEdit && (
-          <Button render={<Link href={`/employees/${e.id}/edit`} />}>
-            <Pencil /> {t("common.edit")}
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" render={<Link href={`/employees/new?from=${e.id}`} />}>
+              <Copy /> {t("emp.copy")}
+            </Button>
+            <Button render={<Link href={`/employees/${e.id}/edit`} />}>
+              <Pencil /> {t("common.edit")}
+            </Button>
+          </div>
         )}
       </div>
 

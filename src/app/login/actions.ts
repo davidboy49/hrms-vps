@@ -6,6 +6,7 @@ import { db } from "@/lib/db"
 import { createSession, destroySession, permsOf, sessionDays } from "@/lib/session"
 import { audit } from "@/lib/audit"
 import { clientIp, rateLimit, waitText } from "@/lib/rate-limit"
+import { beginTwoFactor } from "@/lib/twofactor"
 import { getT } from "@/i18n/server"
 
 export type LoginState = { error?: string }
@@ -52,6 +53,12 @@ export async function login(_: LoginState, form: FormData): Promise<LoginState> 
     }
     await audit(user?.id ?? null, "login-failed", "User", user?.id, `ip ${ip}`)
     return generic
+  }
+
+  // an Admin switched on two-factor for this person: no session yet, they still have to enter an authenticator code
+  if (user.totpRequired) {
+    await beginTwoFactor({ uid: user.id, days: sessionDays(permsOf(user.role), remember), next })
+    redirect("/login/2fa")
   }
 
   await db.user.update({ where: { id: user.id }, data: { failedLogins: 0, lockedUntil: null, lastLoginAt: new Date() } })

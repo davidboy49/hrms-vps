@@ -19,4 +19,11 @@ docker run --rm -v "$(docker volume ls -q | grep -E '(^|_)miniodata$' | head -n1
 test "$(stat -c %s "$BACKUP_DIR/db-$STAMP.dump")" -gt 1000
 
 find "$BACKUP_DIR" -type f \( -name 'db-*.dump' -o -name 'photos-*.tar.gz' \) -mtime +14 -delete
+# off-server copy to Cloudflare R2 (rclone remote "r2", see ~/.config/rclone/rclone.conf); keeps 14 days there too
+if command -v rclone >/dev/null && rclone listremotes | grep -q '^r2:$'; then
+  rclone copy "$BACKUP_DIR" "r2:${R2_BUCKET:-peopledesk-backups}" --include "*-$STAMP.*" --s3-no-check-bucket
+  rclone delete "r2:${R2_BUCKET:-peopledesk-backups}" --min-age 14d --s3-no-check-bucket
+  echo "offsite ok: r2:${R2_BUCKET:-peopledesk-backups}"
+fi
+
 echo "backup ok: $BACKUP_DIR ($STAMP)"

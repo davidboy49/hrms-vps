@@ -1,0 +1,7 @@
+# Local changes: host nginx terminates TLS (Caddy disabled, app on loopback only).
+services:
+  caddy:
+    profiles: ["caddy"]
+  app:
+    ports:
+      - "127.0.0.1:3000:3000"
