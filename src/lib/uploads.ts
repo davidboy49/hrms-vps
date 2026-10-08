@@ -16,6 +16,9 @@ function s3() {
     endpoint: process.env.AWS_ENDPOINT_URL_S3,
     region: process.env.AWS_REGION ?? "us-east-1",
     forcePathStyle: true, // the bucket name travels in the path
+    // newer SDKs add checksum trailers that MinIO and other S3-compatible stores can reject
+    requestChecksumCalculation: "WHEN_REQUIRED",
+    responseChecksumValidation: "WHEN_REQUIRED",
   })
   return client
 }
@@ -34,7 +37,7 @@ function sniffImage(b: Buffer): "image/jpeg" | "image/png" | "image/webp" | null
 }
 
 export async function savePhoto(file: File, name: string, folder: "employees" | "branding" = "employees"): Promise<string> {
-  if (!OK.includes(file.type)) throw new Error("upload.err.type")
+  if (file.type && !OK.includes(file.type)) throw new Error("upload.err.type")
   if (file.size > MAX_PHOTO) throw new Error("form.photoSize")
   const body = Buffer.from(await file.arrayBuffer())
   const real = sniffImage(body)
