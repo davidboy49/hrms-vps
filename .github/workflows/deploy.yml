@@ -3,15 +3,33 @@ name: Deploy
 on:
   push:
     branches: [main]
+  pull_request:
   workflow_dispatch:
 
-# One deploy at a time; a newer push waits for the running one instead of cancelling it mid-build.
-concurrency:
-  group: deploy
-  cancel-in-progress: false
-
 jobs:
+  # Runs on every pull request and push. A deploy only starts if this passes, so a type or lint error never reaches the server.
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # generates the route types (LayoutProps and friends) that tsc needs
+      - run: npx next typegen
+      - run: npx tsc --noEmit
+      - run: npm run lint
+
   deploy:
+    needs: check
+    if: github.event_name != 'pull_request'
+    # One deploy at a time; a newer push waits for the running one instead of cancelling it mid-build.
+    concurrency:
+      group: deploy
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
