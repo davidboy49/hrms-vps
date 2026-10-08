@@ -2,7 +2,7 @@ import Link from "next/link"
 import { redirect } from "next/navigation"
 import { QrCode, Users } from "lucide-react"
 import { db } from "@/lib/db"
-import { getSession, can } from "@/lib/session"
+import { getPendingPasswordUser, getSession, can } from "@/lib/session"
 import { QR_REASON_KEY, resolveQr, suggestedType } from "@/lib/qr-attendance"
 import { fmtDateTime } from "@/lib/format"
 import { SignOutButton } from "@/components/sign-out-button"
@@ -20,6 +20,7 @@ export default async function ScanPage({ searchParams }: { searchParams: Promise
   const sp = await searchParams
   const token = typeof sp.t === "string" ? sp.t : ""
   const user = await getSession()
+  if (!user && (await getPendingPasswordUser())) redirect("/change-password")
   if (!user) redirect(`/login${token ? `?next=${encodeURIComponent(`/scan?t=${token}`)}` : "?next=/scan"}`)
 
   const me = await db.user.findUnique({ where: { id: user.id }, include: { employee: true } })

@@ -79,6 +79,10 @@ model User {
   tokenVersion  Int            @default(0)
   lockedUntil   DateTime?
   lastLoginAt   DateTime?
+  /// set when a login is created in bulk: the person must choose their own password before using the app
+  mustChangePassword    Boolean   @default(false)
+  /// a temporary password stops working after this time (HR then resets it)
+  tempPasswordExpiresAt DateTime?
   employeeId    String?        @unique
   employee      Employee?      @relation(fields: [employeeId], references: [id])
   /// sidebar favourite links (paths), saved per person
