@@ -109,13 +109,7 @@ This pulls the latest code, rebuilds and restarts. Database migrations run on st
 
 ## Logs and alerts
 
-**Live log viewer (Dozzle).** `docker compose up -d dozzle` starts it. It shows the logs of every container with search, and is only reachable from the server itself. From your own computer:
-
-```bash
-ssh -L 8080:127.0.0.1:8080 user@your-vps
-```
-
-then open http://localhost:8080. (It reads the Docker socket, so keep it off the public internet.)
+**Logs.** `docker compose logs --tail 100 -f app` shows the live log of a service (`app`, `db`, `rustfs`).
 
 **Telegram error alerts.**
 

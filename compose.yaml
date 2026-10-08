@@ -101,16 +101,6 @@ services:
       - caddy_config:/config
     logging: *logs
 
-  # live log viewer for every container; reachable only from the server itself (use an SSH tunnel, see deploy/README.md)
-  dozzle:
-    image: amir20/dozzle@sha256:a7d69d20891d3dcc82636e24afa4c1c162b41d0673ef798b14f09e6b69accc5a
-    restart: unless-stopped
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-    ports:
-      - "127.0.0.1:8080:8080"
-    logging: *logs
-
 volumes:
   pgdata:
   miniodata:

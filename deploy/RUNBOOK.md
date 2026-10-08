@@ -10,7 +10,6 @@ Install steps are in [README.md](README.md). Commands run on the VPS in the repo
 | `app` | Next.js app, port 3000 on the server's loopback only |
 | `db` | PostgreSQL 17, no published port (only other containers can reach it) |
 | `rustfs` | Private photo storage (S3 compatible). The volume is still named `miniodata` on purpose |
-| `dozzle` | Log viewer, loopback only (`127.0.0.1:8080`, use an SSH tunnel) |
 | Host nginx | Terminates HTTPS and forwards to the app (`compose.override.yaml` turns Caddy off on this server) |
 | `logwatch` (systemd) | Sends error lines from the container logs to Telegram |
 
@@ -134,4 +133,4 @@ Never open port 5432 in the firewall.
 | Check failed | Same, the log shows the type or lint error. Fix and push; nothing was deployed |
 | App restarts in a loop | Usually a failed migration: `docker compose logs app`. The old data is untouched; restore from the pre-deploy backup if needed |
 | Disk full | `docker system df`, `du -sh /var/backups/peopledesk`; old images are pruned on each deploy |
-| Live logs | Dozzle: `ssh -L 8080:127.0.0.1:8080 ubuntu@<vps-ip>` then open `http://localhost:8080` |
+| Live logs | `docker compose logs --tail 100 -f app` (or `db`, `rustfs`) |
