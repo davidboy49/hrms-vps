@@ -1,6 +1,6 @@
 "use server"
 
-import bcrypt from "bcryptjs"
+import bcrypt from "bcrypt"
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { db } from "@/lib/db"

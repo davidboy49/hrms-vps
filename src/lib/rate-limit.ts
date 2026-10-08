@@ -28,6 +28,21 @@ export async function rateLimit(key: string, limit: number, windowSec: number): 
   }
 }
 
+/** Looks at a counter without adding to it, for limits that only count failures. Allows the request if the database call fails. */
+export async function rateLimitPeek(key: string, limit: number, windowSec: number): Promise<Limit> {
+  try {
+    const rows = await db.$queryRaw<{ count: number; age: number }[]>`
+      SELECT "count", EXTRACT(EPOCH FROM (now() - "windowStart"))::float8 AS age FROM "RateLimit"
+      WHERE "key" = ${key} AND "windowStart" >= now() - make_interval(secs => ${windowSec}::float8)`
+    const r = rows[0]
+    if (r && r.count >= limit) return { ok: false, retryAfter: Math.max(1, Math.ceil(windowSec - r.age)) }
+    return { ok: true }
+  } catch (e) {
+    console.error("rateLimitPeek failed open:", (e as Error).message)
+    return { ok: true }
+  }
+}
+
 /** Best guess at the caller's IP. Caddy overwrites x-forwarded-for with the real visitor address (see deploy/Caddyfile), so the first entry can be trusted. */
 export async function clientIp() {
   const h = await headers()
