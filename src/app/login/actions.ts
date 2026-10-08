@@ -1,11 +1,11 @@
 "use server"
 
-import bcrypt from "bcryptjs"
+import bcrypt from "bcrypt"
 import { redirect } from "next/navigation"
 import { db } from "@/lib/db"
 import { createSession, destroySession, permsOf, sessionDays } from "@/lib/session"
 import { audit } from "@/lib/audit"
-import { clientIp, rateLimit, waitText } from "@/lib/rate-limit"
+import { clientIp, rateLimit, rateLimitPeek, waitText } from "@/lib/rate-limit"
 import { beginTwoFactor } from "@/lib/twofactor"
 import { esc, sendTelegram } from "@/lib/telegram"
 import { getT } from "@/i18n/server"
@@ -13,6 +13,7 @@ import { getT } from "@/i18n/server"
 export type LoginState = { error?: string }
 
 const MAX_FAILS = 5
+const IP_MAX_FAILS = 60
 // lock grows with repeat lockouts in the last hour, so a forgetful user waits a minute but a guesser waits longer
 const LOCK_STEPS_MIN = [1, 5, 15]
 // one account failing from this many different IPs inside the window looks like a distributed attack
@@ -35,7 +36,8 @@ export async function login(_: LoginState, form: FormData): Promise<LoginState> 
 
   // per-IP limit: stops one source trying many accounts or many passwords. Generous because a whole office shares one public IP
   const ip = await clientIp()
-  const lim = await rateLimit(`login:ip:${ip}`, 150, 15 * 60)
+  // only failed attempts count, so a whole office signing in correctly is never blocked
+  const lim = await rateLimitPeek(`login:ip:${ip}`, IP_MAX_FAILS, 15 * 60)
   if (!lim.ok) return { error: t("login.err.network", { wait: waitText(lim.retryAfter, t) }) }
 
   const user = await db.user.findFirst({ where: { OR: [{ username: who }, { email: who }] }, include: { role: { select: { key: true, permissions: true } } } })
@@ -49,6 +51,7 @@ export async function login(_: LoginState, form: FormData): Promise<LoginState> 
 
   const ok = await bcrypt.compare(password, user?.passwordHash ?? (await dummy()))
   if (!user || !user.isActive || !ok) {
+    await rateLimit(`login:ip:${ip}`, IP_MAX_FAILS, 15 * 60)
     if (user) {
       const fails = user.failedLogins + 1
       if (fails >= MAX_FAILS) {
