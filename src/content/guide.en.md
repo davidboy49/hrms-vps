@@ -22,6 +22,7 @@ Staff who should check in with their phone need a **user account linked to their
 1. Open the system address and enter your email and password.
 2. Tick **Remember me** on your own phone so you stay signed in (staff stay signed in for 90 days and it renews while you use it).
 3. Your first password is set by HR or Admin. It stays the same until you change it: **Settings → Account**.
+4. **First time with a temporary password?** HR gives you a sheet or slip with your **username (your staff ID)** and a **temporary password**. Sign in with them, then the system asks you to **choose your own password** (at least 10 characters). You cannot use the app until you do. The temporary password stops working after **14 days**; if it has expired, ask HR to reset it.
 
 If you forget your password, ask HR or Admin to reset it.
 
@@ -73,7 +74,7 @@ Then open **Settings → Company** to set the company name and logo. They appear
 ### 4.2 Employees
 - **Employees → Add** to create a record: photo, names (Khmer and English), department, designation, contract, joining date, pay rate, location, shift and weekly schedule.
 - Use **search and filters**, and the **Import / Export** buttons to load many employees from a spreadsheet. A template can be downloaded from **Settings → Templates**.
-- To let a person sign in and scan with their phone, create a user in **Settings → Users** and link it to their employee record.
+- To let a person sign in and scan with their phone, create a user in **Settings → Users** and link it to their employee record. For many people at once, see 4.9.
 
 ### 4.3 QR attendance
 Open **Attendance → QR**.
@@ -103,6 +104,24 @@ Open **Overtime**: approve or reject requests. **Overtime types** hold the pay m
 
 ### 4.8 Announcements
 **Announcements → New**: write a title and message, choose when it is active. Staff see it in the app, and it can also go to the Telegram group.
+
+### 4.9 Creating logins for many employees
+Use this when employees exist but have no login yet (for example when you first start using the system). You need the permission **Create logins for many employees at once** (HR has it by default).
+
+1. Open **Employees → Create logins**. The page lists active employees who have no login yet.
+2. Search or filter by department, then tick the people you want. The tick box in the header selects everyone shown. You can create up to **300 logins at a time**.
+3. Choose the **role** (normally *Employee*). HR can only give roles without administrative powers; only an Admin can give others.
+4. Press **Review and create**. A window shows how many logins will be created, example usernames, and who will be **skipped and why** (already has a login, resigned or deleted, staff ID that cannot be used as a username, or a username already taken).
+5. Tick the box to confirm you understand the passwords are shown only once, then press **Create**.
+6. The next screen shows the **temporary passwords**. Press **Download Excel** or **Print slips** (one slip per person, with the website address, username and password) **right away**. The passwords are not stored anywhere and cannot be shown again. Do not close the page before you have saved them.
+
+What staff do: sign in with their **staff ID** as the username and the temporary password, then choose their own password. Hand out the slips in person and destroy the Excel file afterwards.
+
+Notes:
+- The username is the staff ID in lower case (for example EMP-0042 becomes `emp-0042`).
+- Temporary passwords stop working after **14 days**. If someone loses theirs or it expires, open **Settings → Users** and use **Reset password**.
+- You can run it again later for new hires: it only shows people who still have no login.
+- Every batch is recorded in the audit log (who, how many, which role), without any passwords.
 
 ---
 
@@ -144,6 +163,8 @@ If the group stays silent, check that the bot is in the group and that Enabled i
 | Leave request refused: not enough balance | Check the balance cards. HR can change the entitlement. |
 | Leave request refused: no working days | The dates are all days off or holidays. |
 | No Telegram messages | Admin: check the token, chat ID, Enabled box, and the bot is in the group. Use the test button. |
+| "Temporary password has expired" | Ask HR to reset the password in Settings → Users, then give the new temporary password to the person. |
+| Lost the sheet of temporary passwords | The passwords cannot be shown again. Use **Reset password** for each person who needs one. |
 | Wrong language | Use the **ខ្មែរ / EN** switch at the top. |
 
 ---
