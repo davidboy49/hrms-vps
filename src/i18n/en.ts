@@ -846,4 +846,8 @@ export const en: Dict = {
   "tg.msg.out": "🔴 {name} ({no}) checked out at {time} · {place}",
   // ---- guide
   "nav.guide": "User guide", "guide.desc": "How to use PeopleDesk. Choose Khmer or English with the language switch at the top.", "guide.contents": "Contents",
+  // ---- error pages
+  "err.notFoundTitle": "Page not found", "err.notFoundDesc": "This page does not exist, or it has been moved or deleted.",
+  "err.title": "Something went wrong", "err.desc": "The page could not be shown. Try again, and if it keeps happening, tell your administrator.",
+  "err.retry": "Try again", "err.home": "Back to dashboard", "err.ref": "Reference: {ref}",
 }
