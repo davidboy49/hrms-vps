@@ -138,6 +138,8 @@ export const en: Dict = {
   "emp.searchAria": "Search employees",
   "emp.add": "Add employee",
   "emp.addDesc": "Fill in the details. You can change everything later.",
+  "emp.copy": "Copy as new employee",
+  "emp.copyDesc": "Job, contract, location and pay are copied from {name}. Enter the new person's own details.",
   "emp.edit": "Edit employee",
   "emp.editName": "Edit {name}",
   "emp.noMatch": "No employees match these filters.",
