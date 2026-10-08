@@ -7,12 +7,17 @@ import { createSession, destroySession, permsOf, sessionDays } from "@/lib/sessi
 import { audit } from "@/lib/audit"
 import { clientIp, rateLimit, waitText } from "@/lib/rate-limit"
 import { beginTwoFactor } from "@/lib/twofactor"
+import { esc, sendTelegram } from "@/lib/telegram"
 import { getT } from "@/i18n/server"
 
 export type LoginState = { error?: string }
 
 const MAX_FAILS = 5
-const LOCK_MIN = 15
+// lock grows with repeat lockouts in the last hour, so a forgetful user waits a minute but a guesser waits longer
+const LOCK_STEPS_MIN = [1, 5, 15]
+// one account failing from this many different IPs inside the window looks like a distributed attack
+const SPREAD_IPS = 3
+const SPREAD_MIN = 10
 // compared when the account is unknown, so known and unknown accounts take the same time
 let dummyHash: Promise<string> | null = null
 const dummy = () => (dummyHash ??= bcrypt.hash("not-a-real-password", 12))
@@ -28,9 +33,9 @@ export async function login(_: LoginState, form: FormData): Promise<LoginState> 
   const next = nextRaw.startsWith("/") && !nextRaw.startsWith("//") && !nextRaw.startsWith("/\\") && !nextRaw.startsWith("/login") ? nextRaw : null
   if (!who || !password) return { error: t("login.err.required") }
 
-  // per-IP limit: stops one source trying many accounts or many passwords
+  // per-IP limit: stops one source trying many accounts or many passwords. Generous because a whole office shares one public IP
   const ip = await clientIp()
-  const lim = await rateLimit(`login:ip:${ip}`, 30, 15 * 60)
+  const lim = await rateLimit(`login:ip:${ip}`, 150, 15 * 60)
   if (!lim.ok) return { error: t("login.err.network", { wait: waitText(lim.retryAfter, t) }) }
 
   const user = await db.user.findFirst({ where: { OR: [{ username: who }, { email: who }] }, include: { role: { select: { key: true, permissions: true } } } })
@@ -46,12 +51,17 @@ export async function login(_: LoginState, form: FormData): Promise<LoginState> 
   if (!user || !user.isActive || !ok) {
     if (user) {
       const fails = user.failedLogins + 1
-      await db.user.update({
-        where: { id: user.id },
-        data: fails >= MAX_FAILS ? { failedLogins: 0, lockedUntil: new Date(Date.now() + LOCK_MIN * 60000) } : { failedLogins: fails },
-      })
+      if (fails >= MAX_FAILS) {
+        const earlier = await db.auditLog.count({ where: { userId: user.id, action: "login-locked", createdAt: { gt: new Date(Date.now() - 60 * 60000) } } })
+        const lockMin = LOCK_STEPS_MIN[Math.min(earlier, LOCK_STEPS_MIN.length - 1)]
+        await db.user.update({ where: { id: user.id }, data: { failedLogins: 0, lockedUntil: new Date(Date.now() + lockMin * 60000) } })
+        await audit(user.id, "login-locked", "User", user.id, `${lockMin} min`)
+      } else {
+        await db.user.update({ where: { id: user.id }, data: { failedLogins: fails } })
+      }
     }
     await audit(user?.id ?? null, "login-failed", "User", user?.id, `ip ${ip}`)
+    if (user) await alertIfSpread(user.id, user.username)
     return generic
   }
 
@@ -65,6 +75,23 @@ export async function login(_: LoginState, form: FormData): Promise<LoginState> 
   await createSession({ id: user.id, tokenVersion: user.tokenVersion }, sessionDays(permsOf(user.role), remember))
   await audit(user.id, "login", "User", user.id, `ip ${ip}`)
   redirect(next ?? (permsOf(user.role).includes("employees.view") ? "/employees" : "/scan"))
+}
+
+/** Tells the Telegram group when one account is being guessed from several IPs at once. Never blocks or slows a login. */
+async function alertIfSpread(userId: string, username: string) {
+  try {
+    const rows = await db.auditLog.findMany({
+      where: { userId, action: "login-failed", createdAt: { gt: new Date(Date.now() - SPREAD_MIN * 60000) } },
+      select: { detail: true },
+      take: 200,
+    })
+    const ips = new Set(rows.map((r) => r.detail ?? "").filter(Boolean))
+    if (ips.size < SPREAD_IPS) return
+    if (!(await rateLimit(`login:spread:${userId}`, 1, 30 * 60)).ok) return
+    await sendTelegram(`🚨 <b>Possible login attack</b>\nAccount <code>${esc(username)}</code> failed to log in from ${ips.size} different IPs in ${SPREAD_MIN} min (${rows.length} attempts).`)
+  } catch (e) {
+    console.error("spread alert failed:", (e as Error).message)
+  }
 }
 
 export async function logout() {
