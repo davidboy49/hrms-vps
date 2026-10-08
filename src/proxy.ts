@@ -40,5 +40,5 @@ export async function proxy(req: NextRequest) {
 
 export const config = {
   // device push endpoints and public assets handle themselves
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|uploads/|iclock/|api/logo|api/cron/|.*\\.(?:png|jpg|jpeg|svg|webp|ico)$).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|uploads/|iclock/|api/logo|api/cron/|api/health|.*\\.(?:png|jpg|jpeg|svg|webp|ico)$).*)"],
 }
