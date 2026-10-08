@@ -46,3 +46,23 @@ jobs:
           printf '%s %s\n' "$HOST" "$HOST_KEY" > ~/.ssh/known_hosts
           # The key on the VPS is locked to deploy/update.sh, so no command is passed here.
           ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes "$USER@$HOST"
+
+  # Tells the team on Telegram when a push to main fails its checks or its deploy. Pull requests stay quiet.
+  notify:
+    needs: [check, deploy]
+    if: always() && github.event_name != 'pull_request' && (needs.check.result == 'failure' || needs.deploy.result == 'failure')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Telegram message
+        env:
+          TOKEN: ${{ secrets.TG_BOT_TOKEN }}
+          CHAT: ${{ secrets.TG_CHAT_ID }}
+          WHAT: ${{ needs.check.result == 'failure' && 'Checks failed (nothing was deployed)' || 'Deploy to the VPS failed' }}
+          COMMIT: ${{ github.event.head_commit.message || github.ref_name }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          curl -fsS --max-time 15 "https://api.telegram.org/bot${TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${CHAT}" \
+            --data-urlencode "text=❌ HRMS: ${WHAT}
+          ${COMMIT%%$'\n'*}
+          ${RUN_URL}" >/dev/null
