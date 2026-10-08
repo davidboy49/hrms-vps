@@ -1,5 +1,5 @@
 import { db } from "@/lib/db"
-import { atLeast, requireUser } from "@/lib/session"
+import { requireUser, can } from "@/lib/session"
 import { getT, titleOf } from "@/i18n/server"
 import { PageHeader } from "@/components/page-header"
 import { OvertimeView } from "./overtime-view"
@@ -14,8 +14,8 @@ export default async function OvertimePage({ searchParams }: { searchParams: Pro
   const user = await requireUser()
   const sp = await searchParams
   const status = STATUSES.includes(sp.status ?? "") ? sp.status! : ""
-  const hr = atLeast(user.role, "HR")
-  const manager = atLeast(user.role, "MANAGER")
+  const hr = can(user, "overtime.manage")
+  const manager = can(user, "overtime.viewAll")
 
   const me = await db.user.findUnique({ where: { id: user.id }, select: { employeeId: true } })
   const myEmployeeId = me?.employeeId ?? null

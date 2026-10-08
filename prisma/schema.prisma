@@ -7,13 +7,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum Role {
-  ADMIN
-  HR
-  MANAGER
-  EMPLOYEE
-}
-
 enum RateBasis {
   MONTH
   DAY
@@ -75,10 +68,12 @@ enum DailyState {
 
 model User {
   id            String         @id @default(cuid())
-  email         String         @unique
+  username      String         @unique
+  email         String?        @unique
   name          String
   passwordHash  String
-  role          Role           @default(HR)
+  roleId        String
+  role          AppRole        @relation(fields: [roleId], references: [id])
   isActive      Boolean        @default(true)
   failedLogins  Int            @default(0)
   tokenVersion  Int            @default(0)
@@ -89,6 +84,20 @@ model User {
   createdAt     DateTime       @default(now())
   auditLogs     AuditLog[]
   announcements Announcement[]
+
+  @@index([roleId])
+}
+
+/// A named set of permissions (see src/lib/permissions.ts). The four built-in roles are isSystem and cannot be deleted.
+model AppRole {
+  id          String   @id @default(cuid())
+  key         String?  @unique
+  name        String   @unique
+  description String   @default("")
+  permissions String[] @default([])
+  isSystem    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  users       User[]
 }
 
 model Department {

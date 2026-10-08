@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache"
 import { db } from "@/lib/db"
-import { assertRole } from "@/lib/session"
+import { assertPerm } from "@/lib/session"
 import { audit } from "@/lib/audit"
 import { encryptSecret } from "@/lib/crypto-secret"
 import { rateLimit, waitText } from "@/lib/rate-limit"
@@ -16,7 +16,7 @@ const put = (key: string, value: string) => db.setting.upsert({ where: { key }, 
 /** Saves the Telegram connection. The token is checked with Telegram, then stored encrypted; it is never sent back to the browser. */
 export async function saveTelegram(form: FormData): Promise<R> {
   const t = await getT()
-  const user = await assertRole("ADMIN")
+  const user = await assertPerm("settings.notifications")
   const lim = await rateLimit(`tg-save:${user.id}`, 20, 600)
   if (!lim.ok) return { error: t("tg.err.rate", { wait: waitText(lim.retryAfter, t) }) }
 
@@ -49,7 +49,7 @@ export async function saveTelegram(form: FormData): Promise<R> {
 
 export async function testTelegram(): Promise<R> {
   const t = await getT()
-  const user = await assertRole("ADMIN")
+  const user = await assertPerm("settings.notifications")
   const lim = await rateLimit(`tg-test:${user.id}`, 10, 600)
   if (!lim.ok) return { error: t("tg.err.rate", { wait: waitText(lim.retryAfter, t) }) }
   const r = await sendTelegram(await tgText("tg.msg.test", { name: esc(user.name) }))
@@ -60,7 +60,7 @@ export async function testTelegram(): Promise<R> {
 /** Lists chats the bot has seen, so the admin can pick the group. The bot must have received a message since it was added. */
 export async function findTelegramChats(): Promise<{ chats?: { id: number; title: string; type: string }[]; error?: string }> {
   const t = await getT()
-  const user = await assertRole("ADMIN")
+  const user = await assertPerm("settings.notifications")
   const lim = await rateLimit(`tg-find:${user.id}`, 20, 600)
   if (!lim.ok) return { error: t("tg.err.rate", { wait: waitText(lim.retryAfter, t) }) }
   const { token } = await tgConfig()

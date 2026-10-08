@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { NativeSelect } from "@/components/native-select"
 import { changeOwnPassword, createUser, saveSettings, updateUser } from "./actions"
 import { useT } from "@/i18n/provider"
+import { suggestUsername } from "@/lib/username"
 
 export function SettingsForm({ values, fields, disabled }: { values: Record<string, string>; fields: { key: string; label: string; hint?: string; type?: string }[]; disabled: boolean }) {
   const t = useT()
@@ -54,11 +55,11 @@ export function SettingsForm({ values, fields, disabled }: { values: Record<stri
   )
 }
 
-type U = { id: string; name: string; email: string; role: string; isActive: boolean; lastLogin: string; employeeId: string | null; employeeLabel: string | null }
-type Emp = { id: string; label: string; name: string; email: string }
-type RoleKey = "ADMIN" | "HR" | "MANAGER" | "EMPLOYEE"
+type U = { id: string; name: string; username: string; email: string; roleId: string; isActive: boolean; lastLogin: string; employeeId: string | null; employeeLabel: string | null }
+type Emp = { id: string; no: string; label: string; name: string; email: string }
+export type RoleOpt = { id: string; key: string | null; label: string }
 
-export function UsersPanel({ users, meId, employees }: { users: U[]; meId: string; employees: Emp[] }) {
+export function UsersPanel({ users, meId, employees, roles }: { users: U[]; meId: string; employees: Emp[]; roles: RoleOpt[] }) {
   const t = useT()
   const linked = new Set(users.map((u) => u.employeeId).filter(Boolean))
   const [open, setOpen] = useState(false)
@@ -98,20 +99,19 @@ export function UsersPanel({ users, meId, employees }: { users: U[]; meId: strin
               <TableRow key={u.id}>
                 <TableCell>
                   <span className="block font-medium">{u.name}</span>
-                  <span className="text-xs text-muted-foreground">{u.email}</span>
+                  <span className="text-xs text-muted-foreground">{u.username}{u.email ? ` · ${u.email}` : ""}</span>
                 </TableCell>
                 <TableCell>
                   <NativeSelect
-                    value={u.role}
+                    value={u.roleId}
                     disabled={u.id === meId || pending}
-                    onChange={(e) => run(() => updateUser(u.id, { role: e.target.value as RoleKey }), t("users.roleUpdated"))}
-                    className="h-7 w-28"
+                    onChange={(e) => run(() => updateUser(u.id, { roleId: e.target.value }), t("users.roleUpdated"))}
+                    className="h-7 w-40"
                     aria-label={t("users.roleFor", { name: u.name })}
                   >
-                    <option value="ADMIN">{t("role.ADMIN")}</option>
-                    <option value="HR">{t("role.HR")}</option>
-                    <option value="MANAGER">{t("role.MANAGER")}</option>
-                    <option value="EMPLOYEE">{t("role.EMPLOYEE")}</option>
+                    {roles.map((r) => (
+                      <option key={r.id} value={r.id}>{r.label}</option>
+                    ))}
                   </NativeSelect>
                 </TableCell>
                 <TableCell className="text-muted-foreground">{u.employeeLabel ?? "—"}</TableCell>
@@ -172,8 +172,11 @@ export function UsersPanel({ users, meId, employees }: { users: U[]; meId: strin
                   const m = document.getElementById("u-email") as HTMLInputElement | null
                   if (n && !n.value) n.value = emp.name
                   if (m && !m.value) m.value = emp.email
+                  const un = document.getElementById("u-username") as HTMLInputElement | null
+                  if (un && !un.value) un.value = suggestUsername(emp.no)
                   const r = document.getElementById("u-role") as HTMLSelectElement | null
-                  if (r && r.value === "HR") r.value = "EMPLOYEE"
+                  const staff = roles.find((x) => x.key === "EMPLOYEE")
+                  if (r && staff && r.value === roles.find((x) => x.key === "HR")?.id) r.value = staff.id
                 }}
               >
                 <option value="">{t("users.notLinked")}</option>
@@ -183,14 +186,18 @@ export function UsersPanel({ users, meId, employees }: { users: U[]; meId: strin
               </NativeSelect>
             </div>
             <div className="space-y-1.5"><Label htmlFor="u-name">{t("common.name")}</Label><Input id="u-name" name="name" required /></div>
-            <div className="space-y-1.5"><Label htmlFor="u-email">{t("login.email")}</Label><Input id="u-email" name="email" type="email" required /></div>
+            <div className="space-y-1.5">
+              <Label htmlFor="u-username">{t("users.username")}</Label>
+              <Input id="u-username" name="username" required minLength={3} maxLength={32} pattern="[a-zA-Z0-9._\-]+" autoCapitalize="none" autoCorrect="off" spellCheck={false} />
+              <p className="text-xs text-muted-foreground">{t("users.usernameHint")}</p>
+            </div>
+            <div className="space-y-1.5"><Label htmlFor="u-email">{t("users.emailOptional")}</Label><Input id="u-email" name="email" type="email" /></div>
             <div className="space-y-1.5">
               <Label htmlFor="u-role">{t("users.role")}</Label>
-              <NativeSelect id="u-role" name="role" defaultValue="HR">
-                <option value="ADMIN">{t("role.ADMIN")}</option>
-                <option value="HR">{t("role.HR")}</option>
-                <option value="MANAGER">{t("role.MANAGER")}</option>
-                <option value="EMPLOYEE">{t("role.EMPLOYEE.long")}</option>
+              <NativeSelect id="u-role" name="roleId" defaultValue={roles.find((x) => x.key === "HR")?.id ?? roles[0]?.id}>
+                {roles.map((r) => (
+                  <option key={r.id} value={r.id}>{r.label}</option>
+                ))}
               </NativeSelect>
             </div>
             <div className="space-y-1.5"><Label htmlFor="u-pw">{t("login.password")}</Label><Input id="u-pw" name="password" type="text" minLength={10} required /></div>
@@ -213,7 +220,7 @@ export function UsersPanel({ users, meId, employees }: { users: U[]; meId: strin
             className="space-y-3"
             action={(fd) =>
               start(async () => {
-                const r = await updateUser(editing!.id, { name: String(fd.get("name") ?? ""), email: String(fd.get("email") ?? ""), employeeId: String(fd.get("employeeId") ?? "") || null })
+                const r = await updateUser(editing!.id, { name: String(fd.get("name") ?? ""), username: String(fd.get("username") ?? ""), email: String(fd.get("email") ?? ""), employeeId: String(fd.get("employeeId") ?? "") || null })
                 if (r.error) setErr(r.error)
                 else {
                   setEditing(null)
@@ -223,7 +230,11 @@ export function UsersPanel({ users, meId, employees }: { users: U[]; meId: strin
             }
           >
             <div className="space-y-1.5"><Label htmlFor="e-name">{t("common.name")}</Label><Input id="e-name" name="name" defaultValue={editing?.name} required /></div>
-            <div className="space-y-1.5"><Label htmlFor="e-email">{t("users.emailSignIn")}</Label><Input id="e-email" name="email" type="email" defaultValue={editing?.email} required /></div>
+            <div className="space-y-1.5">
+              <Label htmlFor="e-username">{t("users.username")}</Label>
+              <Input id="e-username" name="username" defaultValue={editing?.username} required minLength={3} maxLength={32} pattern="[a-zA-Z0-9._\-]+" autoCapitalize="none" autoCorrect="off" spellCheck={false} />
+            </div>
+            <div className="space-y-1.5"><Label htmlFor="e-email">{t("users.emailOptional")}</Label><Input id="e-email" name="email" type="email" defaultValue={editing?.email} /></div>
             <div className="space-y-1.5">
               <Label htmlFor="e-emp">{t("users.linked")}</Label>
               <NativeSelect id="e-emp" name="employeeId" defaultValue={editing?.employeeId ?? ""}>

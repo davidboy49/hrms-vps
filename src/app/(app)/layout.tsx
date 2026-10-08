@@ -1,5 +1,5 @@
 import { cookies } from "next/headers"
-import { requireUser } from "@/lib/session"
+import { can, requireUser } from "@/lib/session"
 import { getBranding } from "@/lib/branding"
 import { AppShell } from "@/components/app-shell"
 import { SubscriptionBanner } from "@/components/subscription-banner"
@@ -15,7 +15,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       company={brand.company}
       logoUrl={brand.logoUrl}
       initialPinned={initialPinned}
-      notice={user.role === "ADMIN" || user.role === "HR" ? <SubscriptionBanner /> : null}
+      notice={can(user, "settings.view") ? <SubscriptionBanner /> : null}
     >
       {children}
     </AppShell>

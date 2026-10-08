@@ -1,5 +1,5 @@
 import { db } from "@/lib/db"
-import { requireRole } from "@/lib/session"
+import { requirePerm } from "@/lib/session"
 import { getT, titleOf } from "@/i18n/server"
 import { PageHeader } from "@/components/page-header"
 import { TemplatesView } from "./templates-view"
@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic"
 
 export default async function TemplatesPage() {
   const t = await getT()
-  await requireRole("HR")
+  await requirePerm("roster.edit")
   const [templates, shifts, employees, depts] = await Promise.all([
     db.scheduleTemplate.findMany({ where: { isPersonal: false }, orderBy: { name: "asc" }, include: { days: true, _count: { select: { employees: true } } } }),
     db.shift.findMany({ where: { isActive: true }, orderBy: { name: "asc" }, select: { id: true, code: true, name: true, startTime: true, endTime: true, colour: true } }),

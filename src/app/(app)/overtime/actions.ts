@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { db } from "@/lib/db"
-import { assertRole, atLeast, getSession } from "@/lib/session"
+import { assertPerm, getSession, can } from "@/lib/session"
 import { audit } from "@/lib/audit"
 import { toDate } from "@/lib/format"
 import { getT } from "@/i18n/server"
@@ -31,7 +31,7 @@ export async function requestOvertime(input: z.input<typeof requestShape>): Prom
   const u = await me()
   const p = requestShape.safeParse(input)
   if (!p.success) return { error: t("ot.err.invalid") }
-  const employeeId = atLeast(u.role, "HR") && p.data.employeeId ? p.data.employeeId : u.employeeId
+  const employeeId = can(u, "overtime.manage") && p.data.employeeId ? p.data.employeeId : u.employeeId
   if (!employeeId) return { error: t("lv.err.noEmployee") }
   const type = await db.overtimeType.findUnique({ where: { id: p.data.overtimeTypeId } })
   if (!type || !type.isActive) return { error: t("ot.err.invalid") }
@@ -46,7 +46,7 @@ export async function requestOvertime(input: z.input<typeof requestShape>): Prom
 
 export async function decideOvertime(id: string, decision: "APPROVED" | "REJECTED", note?: string): Promise<R> {
   const t = await getT()
-  const u = await assertRole("HR")
+  const u = await assertPerm("overtime.manage")
   const r = await db.overtimeRequest.findUnique({ where: { id } })
   if (!r || r.status !== "PENDING") return { error: t("lv.err.decided") }
   await db.overtimeRequest.update({ where: { id }, data: { status: decision, decidedBy: u.id, decidedAt: new Date(), decisionNote: note?.trim() || null } })
@@ -60,7 +60,7 @@ export async function cancelOvertime(id: string): Promise<R> {
   const u = await me()
   const r = await db.overtimeRequest.findUnique({ where: { id } })
   if (!r || (r.status !== "PENDING" && r.status !== "APPROVED")) return { error: t("lv.err.decided") }
-  if (!atLeast(u.role, "HR") && (r.employeeId !== u.employeeId || r.status !== "PENDING")) return { error: t("lv.err.decided") }
+  if (!can(u, "overtime.manage") && (r.employeeId !== u.employeeId || r.status !== "PENDING")) return { error: t("lv.err.decided") }
   await db.overtimeRequest.update({ where: { id }, data: { status: "CANCELLED", decidedBy: u.id, decidedAt: new Date() } })
   await audit(u.id, "cancel", "OvertimeRequest", id)
   refresh()
@@ -76,7 +76,7 @@ const typeShape = z.object({
 
 export async function saveOvertimeType(id: string | null, input: z.input<typeof typeShape>): Promise<R> {
   const t = await getT()
-  const u = await assertRole("HR")
+  const u = await assertPerm("overtime.manage")
   const p = typeShape.safeParse(input)
   if (!p.success) return { error: t(p.error.issues[0].message) }
   try {

@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation"
-import { atLeast, requireUser } from "@/lib/session"
+import { requireUser, can } from "@/lib/session"
 import { loadDashboard, parsePeriod } from "@/lib/dashboard"
 import { getT, titleOf } from "@/i18n/server"
 import { PageHeader } from "@/components/page-header"
@@ -13,8 +13,8 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   const t = await getT()
   const user = await requireUser()
   const sp = await searchParams
-  if (!atLeast(user.role, "MANAGER")) redirect("/scan")
-  const canEdit = atLeast(user.role, "HR")
+  if (!can(user, "dashboard.view")) redirect("/scan")
+  const canEdit = can(user, "employees.edit")
 
   const data = await loadDashboard(parsePeriod(sp), canEdit)
 

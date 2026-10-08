@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { db } from "@/lib/db"
-import { assertRole } from "@/lib/session"
+import { assertPerm } from "@/lib/session"
 import { audit } from "@/lib/audit"
 import { toDate } from "@/lib/format"
 import { esc, sendTelegram, tgText } from "@/lib/telegram"
@@ -20,7 +20,7 @@ export type PublishResult = { ok?: boolean; error?: string; telegram?: "sent" | 
 
 export async function publishAnnouncement(form: FormData): Promise<PublishResult> {
   const t = await getT()
-  const user = await assertRole("HR")
+  const user = await assertPerm("announcements.manage")
   if (!(await rateLimit(`announce:${user.id}`, 20, 3600)).ok) return { error: t("ann.err.rate") }
   const p = schema.safeParse({ title: form.get("title"), body: form.get("body"), expires: String(form.get("expires") ?? "") })
   if (!p.success) return { error: t(p.error.issues[0].message) }
@@ -44,7 +44,7 @@ export async function publishAnnouncement(form: FormData): Promise<PublishResult
 }
 
 export async function deleteAnnouncement(id: string) {
-  const user = await assertRole("HR")
+  const user = await assertPerm("announcements.manage")
   await db.announcement.delete({ where: { id } }).catch(() => {})
   await audit(user.id, "delete", "Announcement", id)
   revalidatePath("/", "layout")

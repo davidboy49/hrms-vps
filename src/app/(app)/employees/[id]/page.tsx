@@ -2,7 +2,7 @@ import Link from "next/link"
 import { notFound } from "next/navigation"
 import { Pencil } from "lucide-react"
 import { db } from "@/lib/db"
-import { atLeast, requireRole } from "@/lib/session"
+import { requirePerm, can } from "@/lib/session"
 import { BASIS_KEY, fmtDate, fmtRate, fmtTime } from "@/lib/format"
 import { getT, titleOf } from "@/i18n/server"
 import { labelFor, type TFn } from "@/i18n/core"
@@ -33,14 +33,14 @@ export const generateMetadata = titleOf("nav.employees")
 
 export default async function EmployeePage({ params }: { params: Promise<{ id: string }> }) {
   const t = await getT()
-  const user = await requireRole("MANAGER")
+  const user = await requirePerm("employees.view")
   const { id } = await params
   const e = await db.employee.findFirst({
     where: { id, deletedAt: null },
     include: { department: true, designation: true, contractType: true, status: true, location: true, shift: true, scheduleTemplate: { include: { days: true } } },
   })
   if (!e) notFound()
-  const canEdit = atLeast(user.role, "HR")
+  const canEdit = can(user, "employees.edit")
   const [history, transfers, daily] = await Promise.all([
     canEdit ? db.rateHistory.findMany({ where: { employeeId: id }, orderBy: { effectiveFrom: "desc" }, take: 10 }) : Promise.resolve([]),
     canEdit ? db.branchTransfer.findMany({ where: { employeeId: id }, orderBy: [{ effectiveFrom: "desc" }, { createdAt: "desc" }], take: 10 }) : Promise.resolve([]),

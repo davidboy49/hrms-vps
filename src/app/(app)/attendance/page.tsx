@@ -2,7 +2,7 @@ import Link from "next/link"
 import { QrCode } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { db } from "@/lib/db"
-import { atLeast, requireRole } from "@/lib/session"
+import { requirePerm, can } from "@/lib/session"
 import { fmtDate, fmtDateTime, fmtTime, fromLocal, localDateKey } from "@/lib/format"
 import { PageHeader } from "@/components/page-header"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -36,11 +36,11 @@ const pill = (tone: "ok" | "warn" | "bad" | "mute", text: string) => (
 
 export default async function AttendancePage({ searchParams }: { searchParams: Promise<SP> }) {
   const t = await getT()
-  const user = await requireRole("MANAGER")
+  const user = await requirePerm("attendance.view")
   const sp = await searchParams
   const tab = sp.tab === "daily" || sp.tab === "devices" ? sp.tab : "punches"
-  const canEdit = atLeast(user.role, "HR")
-  const isAdmin = user.role === "ADMIN"
+  const canEdit = can(user, "attendance.manage")
+  const isAdmin = can(user, "attendance.devices")
   const today = localDateKey(new Date())
 
 
@@ -200,7 +200,14 @@ async function Punches({ sp, canExport }: { sp: SP; canExport: boolean }) {
               </TableRow>
             )}
             {rows.map((p) => (
-              <TableRow key={p.id}>
+              <TableRow
+                key={p.id}
+                className={
+                  p.type === "IN"
+                    ? "bg-green-500/10 hover:bg-green-500/15 dark:bg-green-500/15 dark:hover:bg-green-500/20"
+                    : "bg-orange-500/10 hover:bg-orange-500/15 dark:bg-orange-500/15 dark:hover:bg-orange-500/20"
+                }
+              >
                 <TableCell className="whitespace-nowrap tabular-nums">{fmtDateTime(p.punchedAt)}</TableCell>
                 <TableCell className="font-mono">{p.pin}</TableCell>
                 <TableCell>
@@ -217,7 +224,15 @@ async function Punches({ sp, canExport }: { sp: SP; canExport: boolean }) {
                 <TableCell className="tabular-nums" title={p.accuracyM != null ? t("att.accuracy", { m: p.accuracyM }) : undefined}>
                   {p.distanceM != null ? `${p.distanceM} m` : "—"}
                 </TableCell>
-                <TableCell>{p.type === "IN" ? t("att.checkIn") : t("att.checkOut")}</TableCell>
+                <TableCell>
+                  <span
+                    className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+                      p.type === "IN" ? "bg-green-500/20 text-green-700 dark:text-green-300" : "bg-orange-500/20 text-orange-700 dark:text-orange-300"
+                    }`}
+                  >
+                    {p.type === "IN" ? t("att.checkIn") : t("att.checkOut")}
+                  </span>
+                </TableCell>
                 <TableCell>{p.employee ? pill("ok", t("att.matched")) : pill("warn", t("att.unknownPin"))}</TableCell>
               </TableRow>
             ))}

@@ -1,5 +1,5 @@
 import { db } from "@/lib/db"
-import { requireRole } from "@/lib/session"
+import { requirePerm } from "@/lib/session"
 import { PageHeader } from "@/components/page-header"
 import { getT, titleOf } from "@/i18n/server"
 import { QrKiosk } from "./kiosk"
@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic"
 
 export default async function QrPage() {
   const t = await getT()
-  await requireRole("HR")
+  await requirePerm("qr.manage")
   const locations = await db.location.findMany({ where: { isActive: true }, orderBy: { name: "asc" }, select: { id: true, name: true, latitude: true, longitude: true, qrMode: true } })
   return (
     <>

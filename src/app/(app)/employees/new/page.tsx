@@ -1,5 +1,5 @@
 import { db } from "@/lib/db"
-import { requireRole } from "@/lib/session"
+import { requirePerm } from "@/lib/session"
 import { lookups, nextEmployeeNo } from "@/lib/employees"
 import { PageHeader } from "@/components/page-header"
 import { getT, titleOf } from "@/i18n/server"
@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic"
 
 export default async function NewEmployeePage() {
   const t = await getT()
-  await requireRole("HR")
+  await requirePerm("employees.edit")
   const [lk, no, cur] = await Promise.all([lookups(), nextEmployeeNo(), db.setting.findUnique({ where: { key: "company.currency" } })])
   const active = lk.statuses.find((s) => s.code === "ACTIVE") ?? lk.statuses[0]
   const values: FormValues = {

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache"
 import { db } from "@/lib/db"
-import { assertRole } from "@/lib/session"
+import { assertPerm } from "@/lib/session"
 import { audit } from "@/lib/audit"
 import { entityByKey, type FieldDef } from "@/lib/masterdata"
 import { getT } from "@/i18n/server"
@@ -31,7 +31,7 @@ function coerce(f: FieldDef, raw: FormDataEntryValue | null) {
 
 export async function saveRow(entityKey: string, id: string | null, form: FormData): Promise<{ error?: string }> {
   const t = await getT()
-  const user = await assertRole("HR")
+  const user = await assertPerm("masterdata.edit")
   const ent = entityByKey(entityKey)
   if (!ent) return { error: t("md.err.unknown") }
   const data: Record<string, unknown> = {}
@@ -56,7 +56,7 @@ export async function saveRow(entityKey: string, id: string | null, form: FormDa
 }
 
 export async function setActive(entityKey: string, id: string, active: boolean) {
-  const user = await assertRole("HR")
+  const user = await assertPerm("masterdata.edit")
   const ent = entityByKey(entityKey)
   if (!ent) return
   await delegate(ent.model).update({ where: { id }, data: { isActive: active } })
@@ -66,7 +66,7 @@ export async function setActive(entityKey: string, id: string, active: boolean) 
 
 export async function deleteRow(entityKey: string, id: string): Promise<{ error?: string }> {
   const t = await getT()
-  const user = await assertRole("ADMIN")
+  const user = await assertPerm("masterdata.delete")
   const ent = entityByKey(entityKey)
   if (!ent) return { error: t("md.err.unknown") }
   try {

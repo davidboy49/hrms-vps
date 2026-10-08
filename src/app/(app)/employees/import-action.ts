@@ -1,7 +1,7 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
-import { assertRole } from "@/lib/session"
+import { assertPerm } from "@/lib/session"
 import { audit } from "@/lib/audit"
 import { rateLimit, waitText } from "@/lib/rate-limit"
 import { runImport, type ImportResult } from "@/lib/employee-io"
@@ -9,7 +9,7 @@ import { getT } from "@/i18n/server"
 
 export async function importEmployees(form: FormData): Promise<ImportResult | { error: string }> {
   const t = await getT()
-  const user = await assertRole("HR")
+  const user = await assertPerm("employees.import")
   const lim = await rateLimit(`import:${user.id}`, 20, 10 * 60)
   if (!lim.ok) return { error: t("import.err.rate", { wait: waitText(lim.retryAfter, t) }) }
   const file = form.get("file")

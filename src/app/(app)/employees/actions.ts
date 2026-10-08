@@ -4,7 +4,7 @@ import { z } from "zod"
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import { db } from "@/lib/db"
-import { assertRole } from "@/lib/session"
+import { assertPerm } from "@/lib/session"
 import { audit } from "@/lib/audit"
 import { toDate } from "@/lib/format"
 import { nextEmployeeNo } from "@/lib/employees"
@@ -43,7 +43,7 @@ const schema = z.object({
 
 export async function saveEmployee(id: string | null, _: FormState, form: FormData): Promise<FormState> {
   const t = await getT()
-  const user = await assertRole("HR")
+  const user = await assertPerm("employees.edit")
   const raw = Object.fromEntries(form.entries()) as Record<string, string>
   const parsed = schema.safeParse(raw)
   if (!parsed.success) {
@@ -112,15 +112,15 @@ export async function saveEmployee(id: string | null, _: FormState, form: FormDa
   if (id) {
     await db.employee.update({ where: { id }, data })
     const changed = prev && (Number(prev.rateAmount) !== d.rateAmount || prev.rateBasis !== d.rateBasis || prev.currency !== data.currency)
-    if (changed) await db.rateHistory.create({ data: { employeeId: id, amount: d.rateAmount, basis: d.rateBasis, currency: data.currency, effectiveFrom: new Date(), changedBy: user.email } })
-    if (prev && prev.locationId !== d.locationId) await logTransfer(id, prev.locationId, d.locationId, new Date(), user.email)
+    if (changed) await db.rateHistory.create({ data: { employeeId: id, amount: d.rateAmount, basis: d.rateBasis, currency: data.currency, effectiveFrom: new Date(), changedBy: user.username } })
+    if (prev && prev.locationId !== d.locationId) await logTransfer(id, prev.locationId, d.locationId, new Date(), user.username)
     if (photoUrl !== undefined) await removePhoto(prev?.photoUrl)
     await audit(user.id, "update", "Employee", id, d.nameEn)
   } else {
     const created = await db.employee.create({ data })
     savedId = created.id
-    await db.rateHistory.create({ data: { employeeId: created.id, amount: d.rateAmount, basis: d.rateBasis, currency: data.currency, effectiveFrom: data.joiningDate, changedBy: user.email } })
-    if (d.locationId) await logTransfer(created.id, null, d.locationId, data.joiningDate, user.email)
+    await db.rateHistory.create({ data: { employeeId: created.id, amount: d.rateAmount, basis: d.rateBasis, currency: data.currency, effectiveFrom: data.joiningDate, changedBy: user.username } })
+    if (d.locationId) await logTransfer(created.id, null, d.locationId, data.joiningDate, user.username)
     await audit(user.id, "create", "Employee", created.id, d.nameEn)
   }
   revalidatePath("/employees")
@@ -136,7 +136,7 @@ async function logTransfer(employeeId: string, fromId: string | null, toId: stri
 }
 
 export async function deleteEmployees(ids: string[]) {
-  const user = await assertRole("HR")
+  const user = await assertPerm("employees.edit")
   if (!ids.length) return { count: 0 }
   const r = await db.employee.updateMany({ where: { id: { in: ids }, deletedAt: null }, data: { deletedAt: new Date(), zkPin: null } })
   await audit(user.id, "delete", "Employee", undefined, `${r.count} employee(s)`)
@@ -145,7 +145,7 @@ export async function deleteEmployees(ids: string[]) {
 }
 
 export async function setStatus(ids: string[], statusId: string) {
-  const user = await assertRole("HR")
+  const user = await assertPerm("employees.edit")
   const r = await db.employee.updateMany({ where: { id: { in: ids }, deletedAt: null }, data: { statusId } })
   await audit(user.id, "status", "Employee", undefined, `${r.count} employee(s) -> ${statusId}`)
   revalidatePath("/employees")
@@ -153,6 +153,6 @@ export async function setStatus(ids: string[], statusId: string) {
 }
 
 export async function suggestEmployeeNo() {
-  await assertRole("HR")
+  await assertPerm("employees.edit")
   return nextEmployeeNo()
 }

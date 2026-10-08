@@ -2,74 +2,91 @@
 
 import Link from "next/link"
 import { usePathname, useSearchParams } from "next/navigation"
-import { useState } from "react"
+import { useMemo, useState, useSyncExternalStore } from "react"
 import { useTheme } from "next-themes"
-import { BookOpen, CalendarOff, ChevronDown, Clock, Timer, Database, Megaphone, LayoutDashboard, LogOut, Menu, Moon, Pin, PinOff, Settings, Sun, Users } from "lucide-react"
+import { BookOpen, CalendarOff, ChevronDown, Clock, Timer, Database, Megaphone, LayoutDashboard, LogOut, Menu, Moon, Pin, PinOff, Settings, Star, Sun, Users } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet"
 import { logout } from "@/app/login/actions"
 import { initials } from "@/lib/format"
+import { can, type Permission } from "@/lib/permissions"
 import { useT } from "@/i18n/provider"
 import { LanguageSwitcher } from "@/components/language-switcher"
 import { NotificationsBell } from "@/components/notifications-bell"
 
-type U = { name: string; email: string; role: string }
+type U = { name: string; username: string; email: string | null; role: string; roleName: string; roleIsSystem: boolean; perms: Permission[] }
 
-type Child = { href: string; label: string; min: number; tab?: string }
-type Item = { href: string; label: string; icon: React.ComponentType<{ className?: string }>; min: number; children?: Child[] }
+type Child = { href: string; label: string; perm: Permission; tab?: string }
+type Item = { href: string; label: string; icon: React.ComponentType<{ className?: string }>; perm?: Permission; children?: Child[] }
 type NavEntry = Item | { group: string }
 
 // Sections that used to be tabs inside a page are now sub-items of their group.
+// An item with no `perm` is for everyone; a group with sub-items is hidden when none of them is allowed.
 const NAV: NavEntry[] = [
-  { href: "/", label: "nav.dashboard", icon: LayoutDashboard, min: 0 },
-  { href: "/employees", label: "nav.employees", icon: Users, min: 1 },
+  { href: "/", label: "nav.dashboard", icon: LayoutDashboard },
+  { href: "/employees", label: "nav.employees", icon: Users, perm: "employees.view" },
   {
     href: "/attendance",
     label: "nav.attendance",
     icon: Clock,
-    min: 1,
     children: [
-      { href: "/attendance", label: "att.tab.punches", min: 1, tab: "punches" },
-      { href: "/attendance?tab=daily", label: "att.tab.daily", min: 1, tab: "daily" },
-      { href: "/attendance/roster", label: "att.tab.roster", min: 1 },
-      { href: "/attendance/templates", label: "att.tab.templates", min: 2 },
-      { href: "/attendance?tab=devices", label: "att.tab.devices", min: 1, tab: "devices" },
-      { href: "/attendance/qr", label: "att.qr", min: 2 },
+      { href: "/attendance", label: "att.tab.punches", perm: "attendance.view", tab: "punches" },
+      { href: "/attendance?tab=daily", label: "att.tab.daily", perm: "attendance.view", tab: "daily" },
+      { href: "/attendance/roster", label: "att.tab.roster", perm: "roster.view" },
+      { href: "/attendance/templates", label: "att.tab.templates", perm: "roster.edit" },
+      { href: "/attendance?tab=devices", label: "att.tab.devices", perm: "attendance.view", tab: "devices" },
+      { href: "/attendance/qr", label: "att.qr", perm: "qr.manage" },
     ],
   },
-  { href: "/leave", label: "nav.leave", icon: CalendarOff, min: 0 },
-  { href: "/overtime", label: "nav.overtime", icon: Timer, min: 0 },
-  { href: "/announcements", label: "nav.announcements", icon: Megaphone, min: 2 },
-  { href: "/guide", label: "nav.guide", icon: BookOpen, min: 0 },
+  { href: "/leave", label: "nav.leave", icon: CalendarOff },
+  { href: "/overtime", label: "nav.overtime", icon: Timer },
+  { href: "/announcements", label: "nav.announcements", icon: Megaphone, perm: "announcements.manage" },
+  { href: "/guide", label: "nav.guide", icon: BookOpen },
   { group: "nav.admin" },
   {
     href: "/masterdata",
     label: "nav.masterdata",
     icon: Database,
-    min: 2,
-    children: ["departments", "designations", "contract-types", "statuses", "locations", "shifts", "holidays"].map((k) => ({ href: `/masterdata/${k}`, label: `md.${k}`, min: 2 })),
+    children: ["departments", "designations", "contract-types", "statuses", "locations", "shifts", "holidays"].map((k) => ({ href: `/masterdata/${k}`, label: `md.${k}`, perm: "masterdata.view" as Permission })),
   },
   {
     href: "/settings",
     label: "nav.settings",
     icon: Settings,
-    min: 2,
     children: [
-      { href: "/settings?tab=company", label: "set.tab.company", min: 2, tab: "company" },
-      { href: "/settings?tab=users", label: "set.tab.users", min: 3, tab: "users" },
-      { href: "/settings?tab=attendance", label: "set.tab.attendance", min: 2, tab: "attendance" },
-      { href: "/settings?tab=numbering", label: "set.tab.numbering", min: 2, tab: "numbering" },
-      { href: "/settings?tab=templates", label: "set.tab.templates", min: 2, tab: "templates" },
-      { href: "/settings?tab=notifications", label: "set.tab.notifications", min: 3, tab: "notifications" },
-      { href: "/settings?tab=audit", label: "set.tab.audit", min: 3, tab: "audit" },
-      { href: "/settings?tab=account", label: "set.tab.account", min: 2, tab: "account" },
+      { href: "/settings?tab=company", label: "set.tab.company", perm: "settings.view", tab: "company" },
+      { href: "/settings?tab=users", label: "set.tab.users", perm: "users.manage", tab: "users" },
+      { href: "/settings?tab=roles", label: "set.tab.roles", perm: "roles.manage", tab: "roles" },
+      { href: "/settings?tab=attendance", label: "set.tab.attendance", perm: "settings.view", tab: "attendance" },
+      { href: "/settings?tab=numbering", label: "set.tab.numbering", perm: "settings.view", tab: "numbering" },
+      { href: "/settings?tab=templates", label: "set.tab.templates", perm: "settings.view", tab: "templates" },
+      { href: "/settings?tab=notifications", label: "set.tab.notifications", perm: "settings.notifications", tab: "notifications" },
+      { href: "/settings?tab=audit", label: "set.tab.audit", perm: "audit.view", tab: "audit" },
+      { href: "/settings?tab=account", label: "set.tab.account", perm: "settings.view", tab: "account" },
     ],
   },
 ]
 
-const RANK: Record<string, number> = { EMPLOYEE: 0, MANAGER: 1, HR: 2, ADMIN: 3 }
 const PIN_COOKIE = "pd_sidebar"
+const FAV_KEY = "pd_favorites"
+const FAV_EVENT = "pd-favorites"
+
+function readFavs() {
+  try {
+    return localStorage.getItem(FAV_KEY) ?? "[]"
+  } catch {
+    return "[]"
+  }
+}
+function subscribeFavs(cb: () => void) {
+  window.addEventListener(FAV_EVENT, cb)
+  window.addEventListener("storage", cb)
+  return () => {
+    window.removeEventListener(FAV_EVENT, cb)
+    window.removeEventListener("storage", cb)
+  }
+}
 
 function Brand({ company, logoUrl, compact }: { company: string; logoUrl: string; compact?: boolean }) {
   return (
@@ -95,11 +112,11 @@ function Brand({ company, logoUrl, compact }: { company: string; logoUrl: string
   )
 }
 
-function Nav({ role, onNavigate, compact }: { role: string; onNavigate?: () => void; compact?: boolean }) {
+function Nav({ perms, onNavigate, compact }: { perms: readonly string[]; onNavigate?: () => void; compact?: boolean }) {
   const t = useT()
   const path = usePathname()
   const params = useSearchParams()
-  const rank = RANK[role] ?? 0
+  const allowed = (p?: Permission) => !p || can({ perms }, p)
   const tabParam = params.get("tab")
 
   // a child is current when its page matches and, for tabbed pages, its tab does
@@ -117,11 +134,84 @@ function Nav({ role, onNavigate, compact }: { role: string; onNavigate?: () => v
   // groups the person has opened or closed by hand; otherwise the group with the current page is open
   const [manual, setManual] = useState<Record<string, boolean>>({})
 
-  const items = NAV.filter((n) => !("min" in n) || rank >= n.min)
+  // favourite links, remembered in this browser only
+  const favRaw = useSyncExternalStore(subscribeFavs, readFavs, () => "[]")
+  const favs = useMemo<string[]>(() => {
+    try {
+      const v = JSON.parse(favRaw)
+      return Array.isArray(v) ? v.filter((x) => typeof x === "string") : []
+    } catch {
+      return []
+    }
+  }, [favRaw])
+  const toggleFav = (href: string) => {
+    const next = favs.includes(href) ? favs.filter((h) => h !== href) : [...favs, href]
+    try {
+      localStorage.setItem(FAV_KEY, JSON.stringify(next))
+    } catch {}
+    window.dispatchEvent(new Event(FAV_EVENT))
+  }
+  const star = (href: string, cls?: string) => {
+    const on = favs.includes(href)
+    const label = t(on ? "nav.removeFavorite" : "nav.addFavorite")
+    return (
+      <button
+        type="button"
+        aria-label={label}
+        aria-pressed={on}
+        title={label}
+        onClick={() => toggleFav(href)}
+        className={cn(
+          "absolute right-1 top-1/2 grid size-6 -translate-y-1/2 place-items-center rounded text-muted-foreground hover:text-amber-500 focus-visible:opacity-100",
+          on ? "text-amber-500" : "opacity-0 group-hover/row:opacity-100 [@media(hover:none)]:opacity-100",
+          cls,
+        )}
+      >
+        <Star className={cn("size-3.5", on && "fill-current")} />
+      </button>
+    )
+  }
+
+  // every visible link, so the favourites list can show it with the right label and icon
+  const links = new Map<string, { label: string; icon: React.ComponentType<{ className?: string }> }>()
+  for (const n of NAV) {
+    if (!("href" in n)) continue
+    const kids = n.children?.filter((c) => allowed(c.perm))
+    if (!n.children && !allowed(n.perm)) continue
+    if (kids && kids.length) for (const c of kids) links.set(c.href, { label: c.label, icon: n.icon })
+    else links.set(n.href, { label: n.label, icon: n.icon })
+  }
+  const favLinks = favs.filter((h) => links.has(h))
+
+  // drop what the person may not open, then any heading or group left with nothing under it
+  const visible = NAV.filter((n) => !("href" in n) || (n.children ? n.children.some((c) => allowed(c.perm)) : allowed(n.perm)))
+  const items = visible.filter((n, i) => "href" in n || "href" in (visible[i + 1] ?? { group: "" }))
   return (
     <nav className="flex flex-col gap-0.5 text-sm">
+      {!compact && favLinks.length > 0 && (
+        <div className="mb-1">
+          <p className="px-2 pb-1 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{t("nav.favorites")}</p>
+          {favLinks.map((h) => {
+            const l = links.get(h)!
+            return (
+              <div key={h} className="group/row relative">
+                <Link
+                  href={h}
+                  onClick={onNavigate}
+                  className="flex items-center gap-2.5 whitespace-nowrap rounded-lg px-2.5 py-2 pr-8 text-muted-foreground hover:bg-muted hover:text-foreground"
+                >
+                  <l.icon className="size-4 shrink-0" />
+                  <span className="truncate">{t(l.label)}</span>
+                </Link>
+                {star(h)}
+              </div>
+            )
+          })}
+          <span className="mx-2 mt-2 block border-t" />
+        </div>
+      )}
       {items.map((n, i) => {
-        if (!("min" in n)) {
+        if (!("href" in n)) {
           return compact ? (
             <span key={i} className="mx-2 my-2 border-t" />
           ) : (
@@ -130,18 +220,22 @@ function Nav({ role, onNavigate, compact }: { role: string; onNavigate?: () => v
             </p>
           )
         }
-        const kids = n.children?.filter((c) => rank >= c.min)
+        const kids = n.children?.filter((c) => allowed(c.perm))
         const active = itemActive(n)
         const base = "flex items-center gap-2.5 whitespace-nowrap rounded-lg px-2.5 py-2 text-muted-foreground hover:bg-muted hover:text-foreground"
         const activeCls = "bg-sidebar-accent font-medium text-sidebar-accent-foreground hover:bg-sidebar-accent"
 
         // plain link, or a group shown as a single icon in the narrow rail
         if (!kids || kids.length === 0 || compact) {
+          const target = kids?.[0]?.href ?? n.href
           return (
-            <Link key={n.href} href={kids?.[0]?.href ?? n.href} onClick={onNavigate} title={compact ? t(n.label) : undefined} className={cn(base, active && activeCls)}>
-              <n.icon className="size-4 shrink-0" />
-              {!compact && t(n.label)}
-            </Link>
+            <div key={n.href} className="group/row relative">
+              <Link href={target} onClick={onNavigate} title={compact ? t(n.label) : undefined} className={cn(base, !compact && "pr-8", active && activeCls)}>
+                <n.icon className="size-4 shrink-0" />
+                {!compact && t(n.label)}
+              </Link>
+              {!compact && star(target)}
+            </div>
           )
         }
 
@@ -161,18 +255,19 @@ function Nav({ role, onNavigate, compact }: { role: string; onNavigate?: () => v
             {open && (
               <ul className="ml-[1.1rem] mt-0.5 space-y-0.5 border-l pl-2">
                 {kids.map((c) => (
-                  <li key={c.href}>
+                  <li key={c.href} className="group/row relative">
                     <Link
                       href={c.href}
                       onClick={onNavigate}
                       aria-current={childActive(n, c) ? "page" : undefined}
                       className={cn(
-                        "block truncate rounded-md px-2.5 py-1.5 text-[13px] text-muted-foreground hover:bg-muted hover:text-foreground",
+                        "block truncate rounded-md px-2.5 py-1.5 pr-8 text-[13px] text-muted-foreground hover:bg-muted hover:text-foreground",
                         childActive(n, c) && "bg-sidebar-accent font-medium text-sidebar-accent-foreground hover:bg-sidebar-accent",
                       )}
                     >
                       {t(c.label)}
                     </Link>
+                    {star(c.href)}
                   </li>
                 ))}
               </ul>
@@ -191,7 +286,7 @@ export function AppShell({ user, company, logoUrl, initialPinned, notice, childr
   const [hover, setHover] = useState(false)
   const { resolvedTheme, setTheme } = useTheme()
   const expanded = pinned || hover
-  const canSeeAlerts = (RANK[user.role] ?? 0) >= 1
+  const canSeeAlerts = can(user, "alerts.view")
 
   function togglePin() {
     const next = !pinned
@@ -216,7 +311,7 @@ export function AppShell({ user, company, logoUrl, initialPinned, notice, childr
           )}
         >
           <div className="mb-4 flex items-center justify-between gap-1 px-0.5">
-            {user.role === "ADMIN" && expanded ? (
+            {can(user, "settings.manage") && expanded ? (
               <Link href="/settings?tab=company" className="min-w-0 rounded-lg hover:opacity-80" title={t("shell.editCompany")}>
                 <Brand company={company} logoUrl={logoUrl} />
               </Link>
@@ -237,17 +332,21 @@ export function AppShell({ user, company, logoUrl, initialPinned, notice, childr
               </Button>
             )}
           </div>
-          <Nav role={user.role} compact={!expanded} />
+          <div className="-mx-1 min-h-0 flex-1 overflow-y-auto overscroll-contain px-1">
+            <Nav perms={user.perms} compact={!expanded} />
+          </div>
         </div>
       </aside>
 
       <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent side="left" className="w-64 p-3">
+        <SheetContent side="left" className="flex w-64 flex-col p-3">
           <SheetTitle className="sr-only">{t("nav.navigation")}</SheetTitle>
           <div className="mb-4 px-0.5">
             <Brand company={company} logoUrl={logoUrl} />
           </div>
-          <Nav role={user.role} onNavigate={() => setOpen(false)} />
+          <div className="-mx-1 min-h-0 flex-1 overflow-y-auto overscroll-contain px-1">
+            <Nav perms={user.perms} onNavigate={() => setOpen(false)} />
+          </div>
         </SheetContent>
       </Sheet>
 
@@ -267,7 +366,7 @@ export function AppShell({ user, company, logoUrl, initialPinned, notice, childr
             <span className="grid size-8 place-items-center rounded-full bg-primary/15 text-[11px] font-semibold text-primary">{initials(user.name)}</span>
             <div className="hidden leading-tight sm:block">
               <p className="font-medium">{user.name}</p>
-              <p className="text-xs text-muted-foreground">{t(`role.${user.role}`)}</p>
+              <p className="text-xs text-muted-foreground">{user.roleIsSystem ? t(`role.${user.role}`) : user.roleName}</p>
             </div>
           </div>
           <form action={logout}>
