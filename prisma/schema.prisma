@@ -83,6 +83,15 @@ model User {
   employee      Employee?      @relation(fields: [employeeId], references: [id])
   /// sidebar favourite links (paths), saved per person
   favorites     String[]       @default([])
+  /// set by an Admin: this person must enter an authenticator code after the password
+  totpRequired  Boolean        @default(false)
+  /// authenticator secret, encrypted with AUTH_SECRET (see src/lib/crypto-secret.ts); set but totpEnabledAt empty = setup not finished
+  totpSecret    String?
+  totpEnabledAt DateTime?
+  /// last 30-second step accepted, so one code cannot be used twice
+  totpLastStep  Int?
+  /// SHA-256 of each unused one-time recovery code
+  recoveryCodes String[]       @default([])
   createdAt     DateTime       @default(now())
   auditLogs     AuditLog[]
   announcements Announcement[]

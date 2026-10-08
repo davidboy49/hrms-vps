@@ -9,7 +9,8 @@ import { Label } from "@/components/ui/label"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { NativeSelect } from "@/components/native-select"
-import { changeOwnPassword, createUser, saveSettings, updateUser } from "./actions"
+import { changeOwnPassword, createUser, resetTwoFactor, saveSettings, setTwoFactorRequired, updateUser } from "./actions"
+import { Switch } from "@/components/ui/switch"
 import { useT } from "@/i18n/provider"
 import { suggestUsername } from "@/lib/username"
 
@@ -55,11 +56,11 @@ export function SettingsForm({ values, fields, disabled }: { values: Record<stri
   )
 }
 
-type U = { id: string; name: string; username: string; email: string; roleId: string; isActive: boolean; lastLogin: string; employeeId: string | null; employeeLabel: string | null }
+type U = { id: string; name: string; username: string; email: string; roleId: string; isActive: boolean; lastLogin: string; employeeId: string | null; employeeLabel: string | null; twoFactor: { required: boolean; enrolled: boolean } }
 type Emp = { id: string; no: string; label: string; name: string; email: string }
 export type RoleOpt = { id: string; key: string | null; label: string }
 
-export function UsersPanel({ users, meId, employees, roles }: { users: U[]; meId: string; employees: Emp[]; roles: RoleOpt[] }) {
+export function UsersPanel({ users, meId, canManage2fa, employees, roles }: { users: U[]; meId: string; canManage2fa: boolean; employees: Emp[]; roles: RoleOpt[] }) {
   const t = useT()
   const linked = new Set(users.map((u) => u.employeeId).filter(Boolean))
   const [open, setOpen] = useState(false)
@@ -89,6 +90,7 @@ export function UsersPanel({ users, meId, employees, roles }: { users: U[]; meId
               <TableHead>{t("users.user")}</TableHead>
               <TableHead>{t("users.role")}</TableHead>
               <TableHead>{t("emp.employee")}</TableHead>
+              <TableHead>{t("users.twoFactor")}</TableHead>
               <TableHead>{t("users.lastLogin")}</TableHead>
               <TableHead>{t("emp.status")}</TableHead>
               <TableHead />
@@ -115,6 +117,25 @@ export function UsersPanel({ users, meId, employees, roles }: { users: U[]; meId
                   </NativeSelect>
                 </TableCell>
                 <TableCell className="text-muted-foreground">{u.employeeLabel ?? "—"}</TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      size="sm"
+                      checked={u.twoFactor.required}
+                      disabled={!canManage2fa || pending}
+                      aria-label={t("users.twoFactorFor", { name: u.name })}
+                      onCheckedChange={(on) => run(() => setTwoFactorRequired(u.id, on), on ? t("users.twoFactorOn") : t("users.twoFactorOff"))}
+                    />
+                    <span className="text-xs text-muted-foreground">
+                      {u.twoFactor.required ? (u.twoFactor.enrolled ? t("users.twoFactorReady") : t("users.twoFactorPending")) : t("users.twoFactorNone")}
+                    </span>
+                    {canManage2fa && u.twoFactor.required && (
+                      <Button size="xs" variant="ghost" disabled={pending} onClick={() => { if (confirm(t("users.twoFactorResetAsk", { name: u.name }))) run(() => resetTwoFactor(u.id), t("users.twoFactorResetDone")) }}>
+                        {t("users.twoFactorReset")}
+                      </Button>
+                    )}
+                  </div>
+                </TableCell>
                 <TableCell className="text-muted-foreground">{u.lastLogin}</TableCell>
                 <TableCell>
                   <span className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium ${u.isActive ? "bg-green-500/15 text-green-700 dark:text-green-300" : "bg-muted text-muted-foreground"}`}>

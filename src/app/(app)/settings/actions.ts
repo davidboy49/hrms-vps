@@ -120,6 +120,35 @@ export async function updateUser(id: string, patch: { name?: string; username?: 
   return { ok: true }
 }
 
+/** Only the Admin role decides who needs two-factor (not just anyone who can manage users). */
+async function assertAdminRole() {
+  const me = await assertPerm("users.manage")
+  if (me.role !== "ADMIN") throw new Error("Not allowed")
+  return me
+}
+
+/** Turn "must use an authenticator app" on or off for one person. Turning it on signs them out so the next sign-in asks for setup. */
+export async function setTwoFactorRequired(id: string, required: boolean): Promise<R> {
+  const admin = await assertAdminRole()
+  if (required) {
+    await db.user.update({ where: { id }, data: { totpRequired: true, ...(id === admin.id ? {} : { tokenVersion: { increment: 1 } }) } })
+  } else {
+    await db.user.update({ where: { id }, data: { totpRequired: false, totpSecret: null, totpEnabledAt: null, totpLastStep: null, recoveryCodes: [] } })
+  }
+  await audit(admin.id, required ? "2fa-required" : "2fa-off", "User", id)
+  revalidatePath("/settings")
+  return { ok: true }
+}
+
+/** Lost phone: forget the authenticator and recovery codes. They set up again at their next sign-in, and old sessions end. */
+export async function resetTwoFactor(id: string): Promise<R> {
+  const admin = await assertAdminRole()
+  await db.user.update({ where: { id }, data: { totpSecret: null, totpEnabledAt: null, totpLastStep: null, recoveryCodes: [], tokenVersion: { increment: 1 } } })
+  await audit(admin.id, "2fa-reset", "User", id)
+  revalidatePath("/settings")
+  return { ok: true }
+}
+
 export async function changeOwnPassword(form: FormData): Promise<R> {
   const t = await getT()
   const s = await getSession()

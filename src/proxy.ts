@@ -13,7 +13,7 @@ const RENEW_AFTER_SEC = 24 * 3600
  */
 export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl
-  if (pathname === "/login") return NextResponse.next()
+  if (pathname === "/login" || pathname === "/login/2fa") return NextResponse.next()
 
   const token = req.cookies.get("pd_session")?.value
   const secret = process.env.AUTH_SECRET ? new TextEncoder().encode(process.env.AUTH_SECRET) : null

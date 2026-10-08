@@ -70,13 +70,14 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
       {tab === "users" && (
         <UsersPanel
           meId={user.id}
+          canManage2fa={user.role === "ADMIN"}
           roles={roleOpts}
           employees={(await db.employee.findMany({ where: { deletedAt: null }, orderBy: { employeeNo: "asc" }, select: { id: true, employeeNo: true, nameEn: true, email: true } })).map((e) => ({
             id: e.id, no: e.employeeNo, label: `${e.employeeNo} · ${e.nameEn}`, name: e.nameEn, email: e.email ?? "",
           }))}
           users={(await db.user.findMany({ orderBy: { createdAt: "asc" }, include: { employee: { select: { employeeNo: true, nameEn: true } } } })).map((u) => ({
             id: u.id, name: u.name, username: u.username, email: u.email ?? "", roleId: u.roleId, isActive: u.isActive, lastLogin: u.lastLoginAt ? fmtDateTime(u.lastLoginAt) : t("att.never"),
-            employeeId: u.employeeId, employeeLabel: u.employee ? `${u.employee.employeeNo} · ${u.employee.nameEn}` : null,
+            employeeId: u.employeeId, twoFactor: { required: u.totpRequired, enrolled: u.totpEnabledAt !== null }, employeeLabel: u.employee ? `${u.employee.employeeNo} · ${u.employee.nameEn}` : null,
           }))}
         />
       )}
