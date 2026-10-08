@@ -8,6 +8,7 @@ const ADMIN_USERNAME = process.env.SEED_ADMIN_USERNAME ?? "admin"
 const ADMIN_PASSWORD = process.env.SEED_ADMIN_PASSWORD ?? "ChangeMe123!"
 const SAMPLE = process.env.SEED_SAMPLE !== "0"
 
+/* eslint-disable @typescript-eslint/no-explicit-any -- Prisma model delegates differ per table, so the seed helper takes any of them */
 async function lookup<T extends { code: string }>(
   model: { upsert: (a: any) => Promise<any> },
   rows: (T & Record<string, unknown>)[],

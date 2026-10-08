@@ -268,6 +268,7 @@ export function AppShell({ user, company, logoUrl, initialPinned, initialFavorit
       if (initialFavorites.length === 0 && Array.isArray(v)) {
         const list = v.filter((x): x is string => typeof x === "string")
         if (list.length) {
+          // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time move of old browser-saved favourites
           setFavs(list)
           void saveFavorites(list)
         }
