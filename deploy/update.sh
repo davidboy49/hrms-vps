@@ -10,6 +10,6 @@ git pull --ff-only
 export GIT_SHA="$(git rev-parse --short HEAD)" BUILD_DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 docker compose up -d --build --remove-orphans
 docker image prune -f >/dev/null
-# the build cache grows by a few GB per deploy; keep the last week so builds stay fast
-docker builder prune -f --filter until=168h >/dev/null
+# the build cache grows by a few GB per deploy; cap it so the disk never fills up with it (builds stay fast with 3 GB)
+docker builder prune -f --keep-storage 3GB >/dev/null
 docker compose ps
