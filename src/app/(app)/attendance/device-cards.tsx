@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { NativeSelect } from "@/components/native-select"
-import { deleteDevice, saveDevice, syncAll, syncOne, testDevice } from "./actions"
+import { deleteDevice, saveDevice, setDeviceActive, syncAll, syncOne, testDevice } from "./actions"
 import { useT } from "@/i18n/provider"
 
 export type DeviceView = {
@@ -23,6 +23,8 @@ export type DeviceView = {
   locationId: string | null
   lastSync: string
   todayPunches: number
+  totalPunches: number
+  isActive: boolean
   users: number
 }
 
@@ -69,10 +71,13 @@ export function DeviceCards({ devices, locations, canEdit, isAdmin }: { devices:
     <div className="space-y-3">
       <div className="grid gap-3 md:grid-cols-2">
         {devices.map((d) => (
-          <div key={d.id} className="space-y-3 rounded-lg border p-4">
+          <div key={d.id} className={`space-y-3 rounded-lg border p-4 ${d.isActive ? "" : "bg-muted/40 opacity-75"}`}>
             <div className="flex items-start justify-between gap-2">
               <div>
-                <p className="font-medium">{d.name}</p>
+                <p className="font-medium">
+                  {d.name}
+                  {!d.isActive && <span className="ml-2 rounded-full bg-muted px-2 py-0.5 text-xs font-normal text-muted-foreground">{t("att.inactive")}</span>}
+                </p>
                 <p className="font-mono text-xs text-muted-foreground">
                   {d.model ?? "ZKTeco"} {d.ip ? `· ${d.ip}:${d.port}` : ""}
                 </p>
@@ -90,6 +95,9 @@ export function DeviceCards({ devices, locations, canEdit, isAdmin }: { devices:
                 <b className="block text-base text-foreground tabular-nums">{d.todayPunches}</b>{t("att.punchesToday")}
               </div>
               <div>
+                <b className="block text-base text-foreground tabular-nums">{d.totalPunches}</b>{t("att.punchesTotal")}
+              </div>
+              <div>
                 <b className="block text-base text-foreground">{d.lastSync}</b>{t("att.lastSync")}
               </div>
               <div>
@@ -101,7 +109,7 @@ export function DeviceCards({ devices, locations, canEdit, isAdmin }: { devices:
                 <Button
                   size="sm"
                   variant="outline"
-                  disabled={busy === d.id || d.mode === "PUSH" || d.mode === "QR"}
+                  disabled={busy === d.id || !d.isActive || d.mode === "PUSH" || d.mode === "QR"}
                   onClick={() =>
                     run(d.id, async () => {
                       const r = await syncOne(d.id)
@@ -132,15 +140,25 @@ export function DeviceCards({ devices, locations, canEdit, isAdmin }: { devices:
                       <Pencil />
                     </Button>
                     <Button
-                      size="icon-sm"
+                      size="sm"
                       variant="ghost"
-                      aria-label={t("att.delDev", { name: d.name })}
-                      onClick={() => {
-                        if (window.confirm(t("att.delConfirm", { name: d.name }))) start(async () => { await deleteDevice(d.id); toast.success(t("att.devDeleted")) })
-                      }}
+                      disabled={pending}
+                      onClick={() => start(async () => { const r = await setDeviceActive(d.id, !d.isActive); if (r.error) toast.error(r.error); else toast.success(t(d.isActive ? "att.devDeactivated" : "att.devActivated")) })}
                     >
-                      <Trash2 />
+                      {d.isActive ? t("att.deactivate") : t("att.activate")}
                     </Button>
+                    {d.totalPunches === 0 && (
+                      <Button
+                        size="icon-sm"
+                        variant="ghost"
+                        aria-label={t("att.delDev", { name: d.name })}
+                        onClick={() => {
+                          if (window.confirm(t("att.delConfirm", { name: d.name }))) start(async () => { const r = await deleteDevice(d.id); if (r.error) toast.error(r.error); else toast.success(t("att.devDeleted")) })
+                        }}
+                      >
+                        <Trash2 />
+                      </Button>
+                    )}
                   </>
                 )}
               </div>

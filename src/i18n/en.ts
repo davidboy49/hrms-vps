@@ -331,7 +331,7 @@ export const en: Dict = {
   "att.editDevice": "Edit device",
   "att.editDev": "Edit {name}",
   "att.delDev": "Delete {name}",
-  "att.delConfirm": "Delete {name} and its punches?",
+  "att.delConfirm": "Delete {name}? It has never recorded a punch.",
   "att.devDeleted": "Device deleted",
   "att.devSaved": "Device saved",
   "att.pushHint": "Point the device server address to",
@@ -448,7 +448,7 @@ export const en: Dict = {
   "md.err.parent": "A department cannot be its own parent",
   "md.err.dupCode": "That code is already used",
   "md.err.save": "Could not save",
-  "md.err.inUse": "This item is in use. Deactivate it instead.",
+  "md.err.inUse": "This item is still used by employees, devices, schedules or leave balances, so it cannot be deleted. Deactivate it instead.",
 
   // ---- settings and users
   "set.tab.company": "Company",
@@ -959,4 +959,14 @@ export const en: Dict = {
   "scan.err.deactivated": "Your user has been deactivated. Please contact HR.",
   "tg.msg.deactivated": "🔴 {name} ({no}) was deactivated by {by}: {status}, last day {date}\n{note}",
   "tg.msg.reactivated": "🟢 {name} ({no}) was reactivated by {by}: {status}, from {date}\n{note}",
+  // delete safety net
+  "att.err.hasPunches": "This device has {n} punches. Punches are attendance records and are never deleted. Deactivate the device instead.",
+  "att.err.inactive": "This device is deactivated. Activate it to sync.",
+  "att.inactive": "Inactive",
+  "att.deactivate": "Deactivate",
+  "att.activate": "Activate",
+  "att.devDeactivated": "Device deactivated. Its history is kept.",
+  "att.devActivated": "Device activated",
+  "att.punchesTotal": "punches in total",
+  "md.err.pastHoliday": "This holiday has already passed and changed how those days were counted. Deactivate it instead of deleting it.",
 }

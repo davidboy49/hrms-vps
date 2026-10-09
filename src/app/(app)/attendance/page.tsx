@@ -78,12 +78,13 @@ function syncMessage(m: string, t: TFn) {
 async function Devices({ canEdit, isAdmin, today }: { canEdit: boolean; isAdmin: boolean; today: string }) {
   const t = await getT()
   const start = fromLocal(today, "00:00")
-  const [devices, locations, logs, userCounts, todayCounts] = await Promise.all([
+  const [devices, locations, logs, userCounts, todayCounts, totalCounts] = await Promise.all([
     db.device.findMany({ orderBy: { name: "asc" } }),
     db.location.findMany({ where: { isActive: true }, orderBy: { name: "asc" } }),
     db.syncLog.findMany({ orderBy: { startedAt: "desc" }, take: 12, include: { device: true } }),
     db.employee.groupBy({ by: ["locationId"], where: { deletedAt: null, zkPin: { not: null } }, _count: true }),
     db.attendancePunch.groupBy({ by: ["deviceId"], where: { punchedAt: { gte: start } }, _count: true }),
+    db.attendancePunch.groupBy({ by: ["deviceId"], _count: true }),
   ])
   const view: DeviceView[] = devices.map((d) => ({
     id: d.id,
@@ -97,6 +98,8 @@ async function Devices({ canEdit, isAdmin, today }: { canEdit: boolean; isAdmin:
     locationId: d.locationId,
     lastSync: d.lastSyncAt ? fmtDateTime(d.lastSyncAt) : t("att.never"),
     todayPunches: todayCounts.find((c) => c.deviceId === d.id)?._count ?? 0,
+    totalPunches: totalCounts.find((c) => c.deviceId === d.id)?._count ?? 0,
+    isActive: d.isActive,
     users: userCounts.find((c) => c.locationId === d.locationId)?._count ?? 0,
   }))
   return (
