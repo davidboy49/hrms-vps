@@ -41,6 +41,9 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
             <h2 className="text-2xl font-semibold tracking-tight">{t("login.heading")}</h2>
             <p className="text-sm text-muted-foreground">{t("login.sub")}</p>
           </div>
+          <p className="text-xs text-muted-foreground">
+            <span className="font-semibold text-foreground">HR Toch</span> · {t("app.tagline")}
+          </p>
           <LoginForm next={typeof next === "string" ? next : ""} />
         </div>
       </section>

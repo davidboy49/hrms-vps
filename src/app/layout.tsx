@@ -12,7 +12,7 @@ const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"]
 const khmer = Noto_Sans_Khmer({ variable: "--font-khmer", subsets: ["khmer"], display: "swap" })
 
 export const metadata: Metadata = {
-  title: { default: "PeopleDesk", template: "%s · PeopleDesk" },
+  title: { default: "HR Toch", template: "%s · HR Toch" },
   description: "HR management: employees, attendance and masterdata",
   robots: { index: false, follow: false },
 }
