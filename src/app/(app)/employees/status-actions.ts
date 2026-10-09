@@ -7,7 +7,6 @@ import { db } from "@/lib/db"
 import { assertPerm, permsOf } from "@/lib/session"
 import { audit } from "@/lib/audit"
 import { toDate } from "@/lib/format"
-import { MIN_NOTE } from "@/lib/employment"
 import { rateLimit, waitText } from "@/lib/rate-limit"
 import { esc, sendTelegram, tgText } from "@/lib/telegram"
 import { getT } from "@/i18n/server"
@@ -87,7 +86,7 @@ export async function deactivateEmployee(id: string, raw: { statusId: string; da
   return { ok: true }
 }
 
-/** Brings a deactivated employee back, with a reason. Needs its own permission. */
+/** Brings a deactivated employee back (the note is optional). Needs its own permission. */
 export async function reactivateEmployee(id: string, raw: { statusId: string; date: string; note: string; enableLogin: boolean }): Promise<StatusResult> {
   const t = await getT()
   const actor = await assertPerm("employees.reactivate")
@@ -95,7 +94,6 @@ export async function reactivateEmployee(id: string, raw: { statusId: string; da
   if (!lim.ok) return { error: t("emp.err.rate", { wait: waitText(lim.retryAfter, t) }) }
   const p = input.safeParse(raw)
   if (!p.success) return { error: t("emp.err.date") }
-  if ([...p.data.note].length < MIN_NOTE) return { error: t("emp.err.note", { min: MIN_NOTE }) }
 
   const emp = await db.employee.findFirst({ where: { id, deletedAt: null }, include: { status: true, contractType: true, user: { select: { id: true } } } })
   if (!emp) return { error: t("emp.err.notFound") }
