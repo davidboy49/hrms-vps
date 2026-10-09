@@ -2,7 +2,7 @@ import { db } from "@/lib/db"
 import { adapterFor } from "@/lib/devices"
 import type { RawPunch } from "@/lib/devices/types"
 import { fromLocal, localDateKey, localMinutes } from "@/lib/format"
-import { planFor } from "@/lib/schedule"
+import { planFor, workWindow } from "@/lib/schedule"
 
 /** Store raw punches, link them to employees by PIN, then rebuild the affected daily rows. */
 export async function ingestPunches(deviceId: string, punches: RawPunch[]) {
@@ -64,8 +64,9 @@ export async function rebuildDaily(employeeId: string, dateKey: string) {
   // the shift for this particular day (a roster change or weekly template can differ from the usual shift)
   const shift = plan.kind === "WORK" && plan.shift ? plan.shift : emp?.shift
   const grace = shift?.graceMin ?? 10
-  const [sh, sm] = (shift?.startTime ?? "08:00").split(":").map(Number)
-  const lateMin = Math.max(0, localMinutes(firstIn) - (sh * 60 + sm + grace))
+  // on a half day of approved leave the expected start (morning leave) or end (afternoon leave) moves to the middle of the shift
+  const win = workWindow({ startTime: shift?.startTime ?? "08:00", endTime: shift?.endTime ?? "17:00" }, plan.kind === "WORK" ? plan.half : undefined)
+  const lateMin = Math.max(0, localMinutes(firstIn) - (win.start + grace))
   const state = !lastOut ? "INCOMPLETE" : lateMin > 0 ? "LATE" : "PRESENT"
   const date = new Date(dateKey + "T00:00:00.000Z")
   await db.attendanceDaily.upsert({
