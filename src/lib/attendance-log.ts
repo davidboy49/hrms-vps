@@ -3,7 +3,7 @@ import { db } from "@/lib/db"
 import { localDateKey, localMinutes } from "@/lib/format"
 import { buildPunchWhere, parsePunchFilters } from "@/lib/punches"
 import type { SP } from "@/lib/employees"
-import { loadPlanner } from "@/lib/schedule"
+import { loadPlanner, workWindow } from "@/lib/schedule"
 
 /** Same layout as the "Attendance Logs" sheet the company already uses: one row per employee per day. */
 export const LOG_HEADERS = ["No", "Date", "Code", "Name", "Site", "Department", "Designation", "Shift", "Schedule", "Total Hour", "In", "Out", "Clocked Hour", "Remark"]
@@ -18,10 +18,6 @@ const clock = (min: number) => {
   const h = Math.floor(min / 60)
   const m = min % 60
   return `${String(h % 12 === 0 ? 12 : h % 12).padStart(2, "0")}:${String(m).padStart(2, "0")} ${h < 12 ? "AM" : "PM"}`
-}
-const hhmmToMin = (s: string) => {
-  const [h, m] = s.split(":").map(Number)
-  return h * 60 + m
 }
 const round2 = (n: number) => Math.round(n * 100) / 100
 
@@ -98,14 +94,17 @@ export async function buildLogRows(sp: SP): Promise<{ rows: LogRow[]; company: s
     for (const date of [...keys].sort()) {
       const dp = plan ? plan(e.id, date) : null
       const shift = dp?.shift ?? e.shift
-      const sStart = shift ? hhmmToMin(shift.startTime) : null
-      const sEnd = shift ? hhmmToMin(shift.endTime) : null
+      // on a half day of approved leave the shift is cut at its middle, so nobody is marked late or early for the half they are off
+      const win = shift ? workWindow(shift, dp?.kind === "WORK" ? dp.half : undefined) : null
+      const sStart = win ? win.start : null
+      const sEnd = win ? win.end : null
       if (rows.length >= MAX_ROWS) {
         truncated = true
         break outer
       }
       const d = byDay.get(`${e.id}|${date}`)
       const remarks: string[] = []
+      if (dp?.kind === "WORK" && dp.half) remarks.push(`Half-day leave (${dp.half === "AM" ? "morning" : "afternoon"})`)
       let inT = "N/A"
       let outT = "N/A"
       let hours = 0

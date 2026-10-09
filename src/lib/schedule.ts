@@ -10,6 +10,26 @@ export type DayPlan = {
   source: "roster" | "holiday" | "template" | "default"
   holidayName?: string
   note?: string | null
+  /** WORK days only: half of the day is approved leave, so the person works just the other half */
+  half?: "AM" | "PM"
+}
+
+const minutes = (hhmm: string) => {
+  const [h, m] = hhmm.split(":").map(Number)
+  return h * 60 + m
+}
+
+/**
+ * When the person is expected to be at work, in minutes after midnight. On a half-day leave the shift is cut at its middle:
+ * morning leave means starting at the middle, afternoon leave means finishing at the middle. Nobody is "late" for the half they are off.
+ */
+export function workWindow(shift: { startTime: string; endTime: string }, half?: "AM" | "PM"): { start: number; end: number } {
+  const start = minutes(shift.startTime)
+  const end = minutes(shift.endTime)
+  const mid = Math.round((start + end) / 2)
+  if (half === "AM") return { start: mid, end }
+  if (half === "PM") return { start, end: mid }
+  return { start, end }
 }
 
 /** 0 = Sunday ... 6 = Saturday for a yyyy-mm-dd key */
@@ -54,7 +74,7 @@ export async function loadPlanner(employeeIds: string[], fromKey: string, toKey_
     if (r) {
       if (r.kind === "OFF") return { kind: "OFF", shift: null, source: "roster", note: r.note }
       if (r.kind === "LEAVE") return { kind: "LEAVE", shift: null, source: "roster", note: r.note }
-      return { kind: "WORK", shift: (r.shiftId ? shiftById.get(r.shiftId) : null) ?? own, source: "roster", note: r.note }
+      return { kind: "WORK", shift: (r.shiftId ? shiftById.get(r.shiftId) : null) ?? own, source: "roster", note: r.note, ...(r.half ? { half: r.half } : {}) }
     }
 
     const hol = holidayBy.get(dateKey)

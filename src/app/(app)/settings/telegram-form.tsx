@@ -10,7 +10,7 @@ import { NativeSelect } from "@/components/native-select"
 import { useT } from "@/i18n/provider"
 import { findTelegramChats, saveTelegram, testTelegram } from "./telegram-actions"
 
-export type TgView = { hasToken: boolean; chatId: string; enabled: boolean; lang: "km" | "en"; flags: { late: boolean; far: boolean; missing: boolean; announce: boolean; punch: boolean } }
+export type TgView = { hasToken: boolean; chatId: string; enabled: boolean; lang: "km" | "en"; flags: { late: boolean; far: boolean; missing: boolean; announce: boolean; punch: boolean; leave: boolean } }
 
 export function TelegramForm({ cfg }: { cfg: TgView }) {
   const t = useT()
@@ -115,6 +115,7 @@ export function TelegramForm({ cfg }: { cfg: TgView }) {
               ["far", "tg.far", "tg.farHint"],
               ["missing", "tg.missing", "tg.missingHint"],
               ["announce", "tg.announce", "tg.announceHint"],
+              ["leave", "tg.leave", "tg.leaveHint"],
               ["punch", "tg.punch", "tg.punchHint"],
             ] as const
           ).map(([k, label, hint]) => (

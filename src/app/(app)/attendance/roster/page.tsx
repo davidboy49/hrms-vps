@@ -65,7 +65,7 @@ export default async function RosterPage({ searchParams }: { searchParams: Promi
     weeklyOff: e.scheduleTemplate ? e.scheduleTemplate.days.filter((d) => d.kind === "OFF").map((d) => d.weekday) : [0],
     cells: keys.map((k) => {
       const p = plan(e.id, k)
-      return { k: p.kind, code: p.shift?.code ?? "", colour: p.shift?.colour ?? "blue", src: p.source, note: p.note ?? p.holidayName ?? "" }
+      return { k: p.kind, code: p.shift?.code ?? "", colour: p.shift?.colour ?? "blue", src: p.source, note: p.note ?? p.holidayName ?? "", half: p.half ?? "" }
     }),
   }))
 

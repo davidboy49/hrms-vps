@@ -43,9 +43,9 @@ Tips:
 
 ### 3.2 Request leave
 1. Open **Leave** in the menu and press **Request leave**.
-2. Choose the leave type, the dates and a reason.
-3. Send the request. Only your working days are counted; days off and public holidays are not.
-4. Your balance cards at the top show days left per leave type. The status shows **Pending**, **Approved**, **Rejected** or **Cancelled**.
+2. Choose the leave type, the dates and a reason. For **half a day**, choose *Morning only* or *Afternoon only* under the dates (for a longer leave you can do this for the first and the last day). A line under the form shows how many days the request uses and what your balance will be afterwards.
+3. Send the request. Only your working days are counted; days off and public holidays are not. A half day counts 0.5.
+4. Your balance cards at the top show days left per leave type. If you joined this year, your allowance is a share of the full year (the card says *pro-rated*). Some leave, such as Annual leave, cannot be taken until a few months after you join; the card then shows *Available from* a date. The status shows **Pending**, **Approved**, **Rejected** or **Cancelled**.
 5. You can cancel a request while it is still pending.
 
 If it says your sign-in is not linked to an employee record, ask HR to link it.
@@ -97,7 +97,10 @@ Open **Attendance → QR**.
 ### 4.6 Leave
 Open **Leave**:
 - **Pending requests** can be approved (✓) or rejected (✗, with an optional reason). Approving marks those days as **leave** on the roster and in the attendance export.
-- **Leave types** (button): name, code, paid or unpaid, days per year (or no limit). Starter types are Annual, Sick, Special and Unpaid.
+- **Leave types** (button): name, code, paid or unpaid, days per year (or no limit), and the rules: a **waiting period** after joining (months before this leave can start, 0 = from the first day), **pro-rating** of the yearly allowance for people who join during the year (by the months left in the year, rounded to half a day), and whether **half days** are allowed. Starter types are Annual (pro-rated, 3 months waiting), Sick, Special and Unpaid. HR can still file an exception for someone inside the waiting period.
+- **Half days:** an approved half day stays a working day with half of it off. The roster shows a ½ after the shift code, and attendance expects the person only for the other half, so they are not marked late for the morning they are off.
+- **Everyone's balances** (button): each active employee's quota, used, waiting and left for a year, with an Excel download. There is no carry-over: each year starts fresh.
+- **Telegram:** the HR group gets a message when someone requests leave and when a request is approved, rejected or cancelled (switch it on or off in Settings → Notifications).
 - **Entitlements** (button): give one person a different yearly allowance.
 - You can also file leave for someone from **Request leave → For**.
 - Cancelling an approved request frees the days again.
@@ -141,6 +144,7 @@ Alerts go to a Telegram group that you choose.
 4. Tick **Enabled**, choose what to send, save, and press **Send test message**.
 
 What can be sent:
+- Leave requests and what happens to them
 - Late check-ins
 - Scans refused for distance
 - Missing check-outs (a list in the evening)

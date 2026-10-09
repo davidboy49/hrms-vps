@@ -37,6 +37,12 @@ enum RosterKind {
   LEAVE
 }
 
+/// which half of a day is taken as leave (AM = morning, PM = afternoon); empty means the whole day
+enum LeaveHalf {
+  AM
+  PM
+}
+
 enum QrMode {
   ROTATING
   STATIC
@@ -436,6 +442,8 @@ model RosterEntry {
   note           String?
   /// set when an approved leave request created this entry, so cancelling the leave removes exactly these days
   leaveRequestId String?
+  /// a working day with half of it taken as leave (the person still works the other half)
+  half           LeaveHalf?
   createdAt      DateTime   @default(now())
 
   @@unique([employeeId, date])
@@ -451,6 +459,12 @@ model LeaveType {
   isPaid       Boolean            @default(true)
   /// yearly allowance in days; empty means no limit
   daysPerYear  Float?
+  /// may be taken as a half day
+  allowHalfDay Boolean            @default(true)
+  /// someone who joins part-way through the year gets a share of the allowance, by whole months left in the year
+  proRateNewJoiners Boolean       @default(false)
+  /// this leave cannot start before this many months after the joining date (0 = from the first day)
+  waitingMonths Int               @default(0)
   isActive     Boolean            @default(true)
   requests     LeaveRequest[]
   entitlements LeaveEntitlement[]
@@ -477,8 +491,11 @@ model LeaveRequest {
   leaveType    LeaveType     @relation(fields: [leaveTypeId], references: [id])
   fromDate     DateTime      @db.Date
   toDate       DateTime      @db.Date
-  /// working days inside the range (days off and holidays are not counted)
+  /// working days inside the range (days off and holidays are not counted); halves count 0.5
   days         Float
+  /// which half of the first and of the last day is taken (empty = whole day)
+  firstHalf    LeaveHalf?
+  lastHalf     LeaveHalf?
   reason       String?
   status       RequestStatus @default(PENDING)
   requestedBy  String?

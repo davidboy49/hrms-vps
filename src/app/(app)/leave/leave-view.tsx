@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useTransition } from "react"
+import { useEffect, useState, useTransition } from "react"
 import Link from "next/link"
 import { Check, Plus, Settings2, X } from "lucide-react"
 import { toast } from "sonner"
@@ -12,11 +12,12 @@ import { NativeSelect } from "@/components/native-select"
 import { useT } from "@/i18n/provider"
 import { fmtDate } from "@/lib/format"
 import { cn } from "@/lib/utils"
-import { cancelLeave, decideLeave, requestLeave, saveLeaveType, setEntitlement } from "./actions"
+import { cancelLeave, decideLeave, previewLeave, requestLeave, saveLeaveType, setEntitlement } from "./actions"
 
-type Type = { id: string; code: string; name: string; isPaid: boolean; daysPerYear: number | null; isActive: boolean }
-type Bal = { typeId: string; allowance: number | null; used: number; pending: number }
-type Req = { id: string; employee: string; mine: boolean; type: string; from: string; to: string; days: number; reason: string; status: string; note: string }
+type Type = { id: string; code: string; name: string; isPaid: boolean; daysPerYear: number | null; isActive: boolean; allowHalfDay: boolean; proRateNewJoiners: boolean; waitingMonths: number }
+type Bal = { typeId: string; allowance: number | null; used: number; pending: number; prorated: boolean; eligibleFrom: string | null }
+type Half = "" | "AM" | "PM"
+type Req = { id: string; employee: string; mine: boolean; type: string; from: string; to: string; days: number; firstHalf: Half; lastHalf: Half; reason: string; status: string; note: string }
 type Emp = { id: string; employeeNo: string; nameEn: string }
 type Ent = { employeeId: string; leaveTypeId: string; days: number }
 
@@ -28,6 +29,7 @@ export const STATUS_CLASS: Record<string, string> = {
 }
 
 const today = () => new Date().toISOString().slice(0, 10)
+const num = (n: number) => String(Math.round(n * 10) / 10)
 
 export function LeaveView(props: {
   year: number
@@ -68,6 +70,11 @@ export function LeaveView(props: {
           ))}
         </div>
         <div className="flex gap-2">
+          {props.showEmployee && (
+            <Button variant="outline" render={<Link href="/leave?tab=balances" />}>
+              {t("lv.balancesTab")}
+            </Button>
+          )}
           {props.isHr && (
             <>
               <Button variant="outline" onClick={() => setEnt(true)}>
@@ -90,14 +97,17 @@ export function LeaveView(props: {
           <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {props.balances.map((b) => {
               const left = b.allowance == null ? null : b.allowance - b.used - b.pending
+              const locked = b.eligibleFrom !== null && b.eligibleFrom > today()
               return (
                 <li key={b.typeId} className="rounded-xl border p-3">
                   <p className="truncate text-sm font-medium">{typeName(b.typeId)}</p>
-                  <p className="mt-1 text-2xl font-semibold tabular-nums">{left == null ? "∞" : left}</p>
+                  <p className={cn("mt-1 text-2xl font-semibold tabular-nums", locked && "text-muted-foreground")}>{left == null ? "∞" : num(left)}</p>
                   <p className="text-xs text-muted-foreground">
-                    {t("lv.usedOf", { used: b.used, total: b.allowance ?? "∞" })}
-                    {b.pending > 0 && ` · ${t("lv.waiting", { n: b.pending })}`}
+                    {t("lv.usedOf", { used: num(b.used), total: b.allowance == null ? "∞" : num(b.allowance) })}
+                    {b.pending > 0 && ` · ${t("lv.waiting", { n: num(b.pending) })}`}
                   </p>
+                  {b.prorated && <p className="text-xs text-muted-foreground">{t("lv.prorated")}</p>}
+                  {locked && b.eligibleFrom && <p className="text-xs font-medium text-amber-700 dark:text-amber-400">{t("lv.availableFrom", { date: fmtDate(b.eligibleFrom) })}</p>}
                 </li>
               )
             })}
@@ -125,9 +135,11 @@ export function LeaveView(props: {
                 <td className="px-3 py-2">{r.type}</td>
                 <td className="whitespace-nowrap px-3 py-2">
                   {fmtDate(r.from)}
+                  {r.firstHalf && <span className="text-xs text-muted-foreground"> ({t(r.firstHalf === "AM" ? "lv.morningShort" : "lv.afternoonShort")})</span>}
                   {r.to !== r.from && ` – ${fmtDate(r.to)}`}
+                  {r.to !== r.from && r.lastHalf && <span className="text-xs text-muted-foreground"> ({t(r.lastHalf === "AM" ? "lv.morningShort" : "lv.afternoonShort")})</span>}
                 </td>
-                <td className="px-3 py-2 text-right tabular-nums">{r.days}</td>
+                <td className="px-3 py-2 text-right tabular-nums">{num(r.days)}</td>
                 <td className="max-w-56 truncate px-3 py-2 text-muted-foreground" title={r.reason || r.note}>
                   {r.reason || "—"}
                   {r.note && <span className="block text-xs">↳ {r.note}</span>}
@@ -195,8 +207,31 @@ function RequestDialog({ types, employees, hasEmployee, onClose }: { types: Type
   const [from, setFrom] = useState(today())
   const [to, setTo] = useState(today())
   const [reason, setReason] = useState("")
+  const [firstHalf, setFirstHalf] = useState<Half>("")
+  const [lastHalf, setLastHalf] = useState<Half>("")
+  const [preview, setPreview] = useState<{ days: number; after: number | null } | { error: string } | null>(null)
   const [err, setErr] = useState<string | null>(employees.length === 0 && !hasEmployee ? t("lv.err.noEmployee") : null)
   const [pending, start] = useTransition()
+  const cur = types.find((x) => x.id === type)
+  const single = from === to
+  const halfOk = Boolean(cur?.allowHalfDay)
+  const asHalf = (h: Half) => (halfOk && h ? h : null)
+
+  // live line under the dates: what this request uses and what is left afterwards, checked by the same rules as the real request
+  useEffect(() => {
+    if (!type || !from || !to || (employees.length > 0 && !hasEmployee && !emp)) return
+    let live = true
+    const timer = setTimeout(() => {
+      previewLeave({ employeeId: emp || undefined, leaveTypeId: type, from, to, firstHalf: asHalf(firstHalf), lastHalf: single ? null : asHalf(lastHalf) })
+        .then((r) => live && setPreview(r))
+        .catch(() => live && setPreview(null))
+    }, 300)
+    return () => {
+      live = false
+      clearTimeout(timer)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [emp, type, from, to, firstHalf, lastHalf])
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="sm:max-w-md">
@@ -209,7 +244,7 @@ function RequestDialog({ types, employees, hasEmployee, onClose }: { types: Type
           onSubmit={(e) => {
             e.preventDefault()
             start(async () => {
-              const r = await requestLeave({ employeeId: emp || undefined, leaveTypeId: type, from, to, reason })
+              const r = await requestLeave({ employeeId: emp || undefined, leaveTypeId: type, from, to, reason, firstHalf: asHalf(firstHalf), lastHalf: single ? null : asHalf(lastHalf) })
               if (r.error) setErr(r.error)
               else {
                 toast.success(t("rq.sent"))
@@ -251,6 +286,33 @@ function RequestDialog({ types, employees, hasEmployee, onClose }: { types: Type
               <Input id="lv-to" type="date" value={to} min={from} onChange={(e) => setTo(e.target.value)} required />
             </div>
           </div>
+          {halfOk && (
+            <div className={cn("grid gap-3", !single && "grid-cols-2")}>
+              <div className="space-y-1.5">
+                <Label htmlFor="lv-h1">{single ? t("lv.part") : t("lv.firstDay")}</Label>
+                <NativeSelect id="lv-h1" value={firstHalf} onChange={(e) => setFirstHalf(e.target.value as Half)}>
+                  <option value="">{t("lv.wholeDay")}</option>
+                  <option value="AM">{t("lv.morning")}</option>
+                  <option value="PM">{t("lv.afternoon")}</option>
+                </NativeSelect>
+              </div>
+              {!single && (
+                <div className="space-y-1.5">
+                  <Label htmlFor="lv-h2">{t("lv.lastDay")}</Label>
+                  <NativeSelect id="lv-h2" value={lastHalf} onChange={(e) => setLastHalf(e.target.value as Half)}>
+                    <option value="">{t("lv.wholeDay")}</option>
+                    <option value="AM">{t("lv.morning")}</option>
+                    <option value="PM">{t("lv.afternoon")}</option>
+                  </NativeSelect>
+                </div>
+              )}
+            </div>
+          )}
+          {preview && (
+            <p role="status" className={cn("rounded-md px-3 py-2 text-sm", "error" in preview ? "bg-destructive/10 text-destructive" : "bg-muted")}>
+              {"error" in preview ? preview.error : t("lv.preview", { days: num(preview.days), after: preview.after == null ? "∞" : num(preview.after) })}
+            </p>
+          )}
           <div className="space-y-1.5">
             <Label htmlFor="lv-reason">{t("rq.reason")}</Label>
             <Input id="lv-reason" value={reason} onChange={(e) => setReason(e.target.value)} maxLength={300} />
@@ -265,7 +327,7 @@ function RequestDialog({ types, employees, hasEmployee, onClose }: { types: Type
             <Button type="button" variant="outline" onClick={onClose}>
               {t("common.cancel")}
             </Button>
-            <Button type="submit" disabled={pending || types.length === 0}>
+            <Button type="submit" disabled={pending || types.length === 0 || (preview !== null && "error" in preview)}>
               {t("rq.submit")}
             </Button>
           </DialogFooter>
@@ -297,6 +359,7 @@ function TypesDialog({ types, onClose }: { types: Type[]; onClose: () => void })
                   </span>
                   <span className="text-xs text-muted-foreground">
                     {x.daysPerYear == null ? t("lv.noLimit") : t("lv.perYear", { n: x.daysPerYear })} · {x.isPaid ? t("lv.paid") : t("lv.unpaid")}
+                    {x.waitingMonths > 0 && ` · ${t("lv.waitShort", { n: x.waitingMonths })}`}
                   </span>
                   <Button size="sm" variant="ghost" onClick={() => setEdit(x)}>
                     {t("common.edit")}
@@ -323,6 +386,9 @@ function TypeForm({ type, onDone }: { type: Type | null; onDone: () => void }) {
   const [days, setDays] = useState(type?.daysPerYear == null ? "" : String(type.daysPerYear))
   const [paid, setPaid] = useState(type?.isPaid ?? true)
   const [activeFlag, setActive] = useState(type?.isActive ?? true)
+  const [halfDay, setHalfDay] = useState(type?.allowHalfDay ?? true)
+  const [prorate, setProrate] = useState(type?.proRateNewJoiners ?? false)
+  const [wait, setWait] = useState(String(type?.waitingMonths ?? 0))
   const [err, setErr] = useState<string | null>(null)
   const [pending, start] = useTransition()
   return (
@@ -331,7 +397,7 @@ function TypeForm({ type, onDone }: { type: Type | null; onDone: () => void }) {
       onSubmit={(e) => {
         e.preventDefault()
         start(async () => {
-          const r = await saveLeaveType(type?.id ?? null, { code, name, isPaid: paid, daysPerYear: days === "" ? null : Number(days), isActive: activeFlag })
+          const r = await saveLeaveType(type?.id ?? null, { code, name, isPaid: paid, daysPerYear: days === "" ? null : Number(days), isActive: activeFlag, allowHalfDay: halfDay, proRateNewJoiners: prorate, waitingMonths: Math.max(0, Math.round(Number(wait) || 0)) })
           if (r.error) setErr(r.error)
           else {
             toast.success(t("common.saved"))
@@ -354,6 +420,17 @@ function TypeForm({ type, onDone }: { type: Type | null; onDone: () => void }) {
         <Label htmlFor="lt-days">{t("lv.daysPerYear")}</Label>
         <Input id="lt-days" type="number" min={0} max={366} step="0.5" value={days} onChange={(e) => setDays(e.target.value)} placeholder={t("lv.noLimit")} />
       </div>
+      <div className="space-y-1.5">
+        <Label htmlFor="lt-wait">{t("lv.waitingMonths")}</Label>
+        <Input id="lt-wait" type="number" min={0} max={36} step="1" value={wait} onChange={(e) => setWait(e.target.value)} />
+        <p className="text-xs text-muted-foreground">{t("lv.waitingHint")}</p>
+      </div>
+      <label className="flex items-center gap-2 text-sm">
+        <input type="checkbox" className="size-4 accent-[var(--primary)]" checked={prorate} onChange={(e) => setProrate(e.target.checked)} /> {t("lv.prorate")}
+      </label>
+      <label className="flex items-center gap-2 text-sm">
+        <input type="checkbox" className="size-4 accent-[var(--primary)]" checked={halfDay} onChange={(e) => setHalfDay(e.target.checked)} /> {t("lv.allowHalf")}
+      </label>
       <label className="flex items-center gap-2 text-sm">
         <input type="checkbox" className="size-4 accent-[var(--primary)]" checked={paid} onChange={(e) => setPaid(e.target.checked)} /> {t("lv.paid")}
       </label>

@@ -9,6 +9,7 @@ import { audit } from "@/lib/audit"
 import { toDate } from "@/lib/format"
 import { rateLimit, waitText } from "@/lib/rate-limit"
 import { esc, sendTelegram, tgText } from "@/lib/telegram"
+import { releaseLeaveEntries } from "@/lib/leave"
 import { getT } from "@/i18n/server"
 
 export type StatusResult = { ok: true } | { error: string }
@@ -71,7 +72,7 @@ export async function deactivateEmployee(id: string, raw: { statusId: string; da
     })
     if (leave.length) {
       const ids = leave.map((l) => l.id)
-      await tx.rosterEntry.deleteMany({ where: { leaveRequestId: { in: ids } } })
+      await releaseLeaveEntries(tx, ids)
       await tx.leaveRequest.updateMany({ where: { id: { in: ids } }, data: { status: "CANCELLED", decidedBy: actor.id, decidedAt: new Date(), decisionNote: "Employee deactivated" } })
     }
     await tx.overtimeRequest.updateMany({ where: { employeeId: id, status: "PENDING" }, data: { status: "CANCELLED", decidedBy: actor.id, decidedAt: new Date(), decisionNote: "Employee deactivated" } })

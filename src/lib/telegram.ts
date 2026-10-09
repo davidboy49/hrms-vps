@@ -5,9 +5,9 @@ import { dictFor } from "@/i18n/server"
 import { translate, type Vars } from "@/i18n/core"
 
 /** What can be sent to the HR Telegram group. Each kind can be switched off in Settings → Notifications. */
-export type TgKind = "late" | "far" | "missing" | "announce" | "punch"
+export type TgKind = "late" | "far" | "missing" | "announce" | "punch" | "leave"
 
-export const TG_KEYS = ["tg.token", "tg.chatId", "tg.enabled", "tg.lang", "tg.late", "tg.far", "tg.missing", "tg.announce", "tg.punch"] as const
+export const TG_KEYS = ["tg.token", "tg.chatId", "tg.enabled", "tg.lang", "tg.late", "tg.far", "tg.missing", "tg.announce", "tg.punch", "tg.leave"] as const
 
 export type TgConfig = {
   token: string | null
@@ -28,7 +28,7 @@ export async function tgConfig(): Promise<TgConfig> {
     chatId: get("tg.chatId") ?? "",
     enabled: get("tg.enabled") === "1",
     lang: get("tg.lang") === "en" ? "en" : "km",
-    flags: { late: on("tg.late"), far: on("tg.far"), missing: on("tg.missing"), announce: on("tg.announce"), punch: get("tg.punch") === "1" },
+    flags: { late: on("tg.late"), far: on("tg.far"), missing: on("tg.missing"), announce: on("tg.announce"), punch: get("tg.punch") === "1", leave: on("tg.leave") },
   }
 }
 

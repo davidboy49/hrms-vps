@@ -25,7 +25,7 @@ export type RosterRow = {
   templateId: string | null
   personal: boolean
   weeklyOff: number[]
-  cells: { k: Kind; code: string; colour: string; src: string; note: string }[]
+  cells: { k: Kind; code: string; colour: string; src: string; note: string; half?: string }[]
 }
 type Shift = { id: string; code: string; name: string; startTime: string; endTime: string; colour: string }
 
@@ -35,7 +35,8 @@ function cellStyle(c: RosterRow["cells"][number]) {
   if (c.k === "OFF") return { cls: OFF_CLASS, text: "OFF" }
   if (c.k === "HOLIDAY") return { cls: HOLIDAY_CLASS, text: "PHL" }
   if (c.k === "LEAVE") return { cls: LEAVE_CLASS, text: "LV" }
-  return { cls: c.code ? shiftClass(c.colour) : "bg-muted text-muted-foreground", text: c.code || "—" }
+  // a "½" after the shift code marks a working day with half of it taken as leave
+  return { cls: c.code ? shiftClass(c.colour) : "bg-muted text-muted-foreground", text: (c.code || "—") + (c.half ? "½" : "") }
 }
 
 export function RosterGrid(props: {

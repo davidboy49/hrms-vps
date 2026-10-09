@@ -5,13 +5,14 @@ import { localDateKey } from "@/lib/format"
 import { getT, titleOf } from "@/i18n/server"
 import { PageHeader } from "@/components/page-header"
 import { LeaveView } from "./leave-view"
+import { BalancesReport } from "./balances-report"
 
 export const generateMetadata = titleOf("nav.leave")
 export const dynamic = "force-dynamic"
 
 const STATUSES = ["PENDING", "APPROVED", "REJECTED", "CANCELLED"]
 
-export default async function LeavePage({ searchParams }: { searchParams: Promise<{ status?: string }> }) {
+export default async function LeavePage({ searchParams }: { searchParams: Promise<{ status?: string; tab?: string; year?: string }> }) {
   const t = await getT()
   const user = await requireUser()
   const sp = await searchParams
@@ -19,6 +20,18 @@ export default async function LeavePage({ searchParams }: { searchParams: Promis
   const hr = can(user, "leave.manage")
   const manager = can(user, "leave.viewAll")
   const year = Number(localDateKey(new Date()).slice(0, 4))
+
+  // everyone's leave quota for a year (managers and HR)
+  if (sp.tab === "balances" && manager) {
+    const y = Number(sp.year)
+    const shown = Number.isInteger(y) && y >= 2000 && y <= 2100 ? y : year
+    return (
+      <>
+        <PageHeader title={t("lv.balancesTab")} description={t("lv.balancesDesc")} />
+        <BalancesReport year={shown} />
+      </>
+    )
+  }
 
   const me = await db.user.findUnique({ where: { id: user.id }, select: { employeeId: true } })
   const myEmployeeId = me?.employeeId ?? null
@@ -46,7 +59,7 @@ export default async function LeavePage({ searchParams }: { searchParams: Promis
         isHr={hr}
         showEmployee={manager}
         hasEmployee={Boolean(myEmployeeId)}
-        types={types.map((x) => ({ id: x.id, code: x.code, name: x.name, isPaid: x.isPaid, daysPerYear: x.daysPerYear, isActive: x.isActive }))}
+        types={types.map((x) => ({ id: x.id, code: x.code, name: x.name, isPaid: x.isPaid, daysPerYear: x.daysPerYear, isActive: x.isActive, allowHalfDay: x.allowHalfDay, proRateNewJoiners: x.proRateNewJoiners, waitingMonths: x.waitingMonths }))}
         balances={mine}
         employees={employees}
         entitlements={ents.map((e) => ({ employeeId: e.employeeId, leaveTypeId: e.leaveTypeId, days: e.days }))}
@@ -58,6 +71,8 @@ export default async function LeavePage({ searchParams }: { searchParams: Promis
           from: r.fromDate.toISOString().slice(0, 10),
           to: r.toDate.toISOString().slice(0, 10),
           days: r.days,
+          firstHalf: r.firstHalf ?? "",
+          lastHalf: r.lastHalf ?? "",
           reason: r.reason ?? "",
           status: r.status,
           note: r.decisionNote ?? "",

@@ -40,7 +40,7 @@ export async function saveTelegram(form: FormData): Promise<R> {
   await put("tg.chatId", chatId)
   await put("tg.lang", form.get("lang") === "en" ? "en" : "km")
   await put("tg.enabled", form.get("enabled") === "on" && form.get("clearToken") !== "1" ? "1" : "0")
-  for (const k of ["late", "far", "missing", "announce", "punch"]) await put(`tg.${k}`, form.get(k) === "on" ? "1" : "0")
+  for (const k of ["late", "far", "missing", "announce", "punch", "leave"]) await put(`tg.${k}`, form.get(k) === "on" ? "1" : "0")
 
   await audit(user.id, "update", "Setting", undefined, "telegram notifications")
   revalidatePath("/settings")
