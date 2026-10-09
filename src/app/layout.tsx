@@ -3,7 +3,7 @@ import { Geist, Geist_Mono, Noto_Sans_Khmer } from "next/font/google"
 import { ThemeProvider } from "next-themes"
 import { Toaster } from "@/components/ui/sonner"
 import { I18nProvider } from "@/i18n/provider"
-import { dictFor, getLocale } from "@/i18n/server"
+import { getLocale } from "@/i18n/server"
 import "./globals.css"
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] })
@@ -23,7 +23,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
     <html lang={locale} suppressHydrationWarning className={`${geistSans.variable} ${geistMono.variable} ${khmer.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col">
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} storageKey="peopledesk-theme" disableTransitionOnChange>
-          <I18nProvider locale={locale} dict={dictFor(locale)}>
+          <I18nProvider locale={locale}>
             {children}
             <Toaster richColors position="top-right" />
           </I18nProvider>
