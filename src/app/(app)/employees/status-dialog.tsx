@@ -9,7 +9,6 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
-import { MIN_NOTE } from "@/lib/employment"
 import { deactivateEmployee, reactivateEmployee } from "./status-actions"
 import { useT } from "@/i18n/provider"
 
@@ -27,9 +26,8 @@ export function StatusDialog({ open, onOpenChange, mode, who, statuses, today }:
   const [err, setErr] = useState<string | null>(null)
   const [pending, start] = useTransition()
   const deact = mode === "deactivate"
-  const len = [...note.trim()].length
-  // the note is optional when someone leaves, but required (at least MIN_NOTE characters) when they come back
-  const ready = (deact || len >= MIN_NOTE) && statusId !== "" && date !== ""
+  // the note is optional both when someone leaves and when they come back
+  const ready = statusId !== "" && date !== ""
 
   function submit() {
     setErr(null)
@@ -68,9 +66,8 @@ export function StatusDialog({ open, onOpenChange, mode, who, statuses, today }:
             </div>
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="st-note">{t(deact ? "emp.deact.note" : "emp.react.note", { min: MIN_NOTE })}</Label>
+            <Label htmlFor="st-note">{t(deact ? "emp.deact.note" : "emp.react.note")}</Label>
             <Textarea id="st-note" value={note} onChange={(e) => setNote(e.target.value)} rows={4} />
-            {!deact && <p className={`text-xs ${len >= MIN_NOTE ? "text-muted-foreground" : "text-destructive"}`}>{t("emp.count", { n: len, min: MIN_NOTE })}</p>}
           </div>
           {deact ? (
             <ul className="list-disc space-y-1 pl-5 text-muted-foreground">
