@@ -4,6 +4,7 @@ import { can, requireUser } from "@/lib/session"
 import { getBranding } from "@/lib/branding"
 import { AppShell } from "@/components/app-shell"
 import { SubscriptionBanner } from "@/components/subscription-banner"
+import { EnvBanner } from "@/components/env-banner"
 import { versionLabel } from "@/lib/version"
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -19,7 +20,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       initialPinned={initialPinned}
       initialFavorites={row?.favorites ?? []}
       version={user.roleIsSystem && (user.role === "ADMIN" || user.role === "HR") ? versionLabel() : null}
-      notice={can(user, "settings.view") ? <SubscriptionBanner /> : null}
+      notice={
+        <>
+          <EnvBanner />
+          {can(user, "settings.view") ? <SubscriptionBanner /> : null}
+        </>
+      }
     >
       {children}
     </AppShell>

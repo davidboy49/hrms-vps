@@ -1,0 +1,102 @@
+# QAS: a separate test copy of PeopleDesk on the same server (https://hrs-qas.neakra.com).
+# Own database, own photo storage, own secrets, fake data. It shares nothing with production.
+# Telegram can never send from here (TELEGRAM_API_BASE points nowhere).
+# Use deploy/qas/update-qas.sh, not this file directly. See deploy/qas/README.md.
+name: hrmsqas
+
+x-logs: &logs
+  driver: json-file
+  options: { max-size: "5m", max-file: "2" }
+
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: peopledesk
+      POSTGRES_DB: peopledesk
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in the QAS .env}
+    volumes:
+      - qasdb:/var/lib/postgresql/data
+    mem_limit: 300m
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U peopledesk -d peopledesk"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    logging: *logs
+
+  rustfs:
+    image: rustfs/rustfs@sha256:1803faef57627e2d9c2e7d89d655d712ddded5389040054987163043fecb6a3c
+    restart: unless-stopped
+    user: "0:0"
+    command: ["/data"]
+    environment:
+      RUSTFS_ACCESS_KEY: ${MINIO_ROOT_USER:?set MINIO_ROOT_USER in the QAS .env}
+      RUSTFS_SECRET_KEY: ${MINIO_ROOT_PASSWORD:?set MINIO_ROOT_PASSWORD in the QAS .env}
+      RUSTFS_ADDRESS: ":9000"
+      RUSTFS_VOLUMES: /data
+    volumes:
+      - qasstore:/data
+    mem_limit: 250m
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:9000/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    logging: *logs
+
+  rustfs-init:
+    image: amazon/aws-cli@sha256:3dacc5db57c923c4223e949795f538ecf1f2212b2b7d5a028b47b97f91564c0d
+    depends_on:
+      rustfs: { condition: service_healthy }
+    restart: "no"
+    environment:
+      AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER}
+      AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD}
+      AWS_DEFAULT_REGION: us-east-1
+    entrypoint: ["sh", "-c", "aws --endpoint-url http://rustfs:9000 s3api head-bucket --bucket uploads 2>/dev/null || aws --endpoint-url http://rustfs:9000 s3api create-bucket --bucket uploads"]
+
+  app:
+    build:
+      context: ../..
+      args:
+        GIT_SHA: ${GIT_SHA:-qas}
+        BUILD_DATE: ${BUILD_DATE:-}
+    image: hrmsqas-app
+    restart: unless-stopped
+    depends_on:
+      db: { condition: service_healthy }
+      rustfs-init: { condition: service_completed_successfully }
+    environment:
+      DATABASE_URL: postgresql://peopledesk:${POSTGRES_PASSWORD}@db:5432/peopledesk?schema=public
+      DATABASE_URL_UNPOOLED: postgresql://peopledesk:${POSTGRES_PASSWORD}@db:5432/peopledesk?schema=public
+      AUTH_SECRET: ${AUTH_SECRET:?set AUTH_SECRET in the QAS .env}
+      CRON_SECRET: ${CRON_SECRET:?set CRON_SECRET in the QAS .env}
+      AWS_ENDPOINT_URL_S3: http://rustfs:9000
+      AWS_REGION: us-east-1
+      AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER}
+      AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD}
+      STORAGE_BUCKET: uploads
+      # shows the orange "QAS" banner on every page
+      APP_ENV_LABEL: QAS
+      # nothing listens here, so even a real bot token pasted into QAS settings cannot send a message
+      TELEGRAM_API_BASE: http://127.0.0.1:9
+      # used by the demo-user seed only
+      QAS_DEMO_PASSWORD: ${QAS_DEMO_PASSWORD:-}
+    ports:
+      - "127.0.0.1:3100:3000"
+    mem_limit: 600m
+    volumes:
+      - ./seed-users.mjs:/app/seed-users.mjs:ro
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/login').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+    logging: *logs
+
+volumes:
+  qasdb:
+  qasstore:
