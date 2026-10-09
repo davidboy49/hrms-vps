@@ -52,6 +52,12 @@ A rollback does **not** undo database migrations. If a migration changed or drop
 
 Backups: `deploy/backup.sh` runs nightly at 19:00 (cron), before every deploy, and on demand. It writes to `/var/backups/peopledesk` (`db-<stamp>.dump`, `photos-<stamp>.tar.gz`), keeps 14 days, and copies to Cloudflare R2 (`r2:peopledesk-backups`) when rclone is set up. An `NotImplemented` line from rclone while deleting old files is harmless.
 
+**Backup alerts (so a missed backup is never silent).**
+- If `backup.sh` fails (including the copy to R2) it sends a Telegram message through the `LOGWATCH_BOT_TOKEN` / `LOGWATCH_CHAT_ID` bot in `.env`, and the deploy that triggered it stops, as before.
+- `deploy/backup-watch.sh` runs hourly from cron and alerts if the newest database backup is more than 26 hours old or looks empty (at most one message every 6 hours, and an "all clear" when it recovers). It watches the result, so it also catches a cron job that never ran.
+- Optional Uptime Kuma heartbeat: in Kuma add a monitor of type **Push**, heartbeat interval **93600** seconds (26 h), copy its push URL, and put `BACKUP_HEARTBEAT_URL=<that url>` in `.env`. `backup.sh` then pings it after every successful backup (and reports "down" on failure), and Kuma raises its own alarm if nothing arrives.
+- The crontab starts with `CRON_TZ=Asia/Phnom_Penh`, so `0 19 * * *` always means 19:00 in Phnom Penh. Check with `sudo journalctl -u cron --since today | grep ubuntu`.
+
 **Restore test (done 2026-10-08, passed).** The newest dump restored with no errors into an empty throwaway PostgreSQL 17: 29 tables, row counts identical to the live database, and the photo archive listed 56 files. Repeat after big changes:
 
 ```bash
