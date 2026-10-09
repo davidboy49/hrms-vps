@@ -4,6 +4,7 @@ import { LoginForm } from "./login-form"
 import { LoginArt } from "./login-art"
 import { LanguageSwitcher } from "@/components/language-switcher"
 import { EnvBanner } from "@/components/env-banner"
+import { PoweredBy } from "@/components/powered-by"
 import { getT } from "@/i18n/server"
 import { DEFAULT_WORDMARK, getBranding } from "@/lib/branding"
 
@@ -28,7 +29,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
         <div className="w-full max-w-sm space-y-6">
           {!brand.custom && (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={DEFAULT_WORDMARK} alt="HRS · Human Resource System" className="h-20 w-auto rounded-xl bg-white p-2" />
+            <img src={DEFAULT_WORDMARK} alt="HR Toch" className="h-28 w-auto rounded-xl bg-white p-2" />
           )}
           {brand.custom && (
           <div className="flex items-center gap-2 font-semibold lg:hidden">
@@ -41,9 +42,11 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
             <h2 className="text-2xl font-semibold tracking-tight">{t("login.heading")}</h2>
             <p className="text-sm text-muted-foreground">{t("login.sub")}</p>
           </div>
-          <p className="text-xs text-muted-foreground">
-            <span className="font-semibold text-foreground">HR Toch</span> · {t("app.tagline")}
-          </p>
+          {brand.custom ? (
+            <PoweredBy tagline />
+          ) : (
+            <p className="text-xs text-muted-foreground">{t("app.tagline")}</p>
+          )}
           <LoginForm next={typeof next === "string" ? next : ""} />
         </div>
       </section>

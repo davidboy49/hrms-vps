@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { redirect } from "next/navigation"
-import { QrCode, Users } from "lucide-react"
+import { QrCode } from "lucide-react"
 import { db } from "@/lib/db"
 import { getPendingPasswordUser, getSession, can } from "@/lib/session"
 import { QR_REASON_KEY, resolveQr, suggestedType } from "@/lib/qr-attendance"
@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button"
 import { ScanClient } from "./scan-client"
 import { ActiveAnnouncements } from "@/components/active-announcements"
 import { getT, titleOf } from "@/i18n/server"
+import { getBranding } from "@/lib/branding"
 import { LanguageSwitcher } from "@/components/language-switcher"
 
 export const generateMetadata = titleOf("scan.title")
@@ -20,6 +21,7 @@ export default async function ScanPage({ searchParams }: { searchParams: Promise
   const sp = await searchParams
   const token = typeof sp.t === "string" ? sp.t : ""
   const user = await getSession()
+  const brand = await getBranding()
   if (!user && (await getPendingPasswordUser())) redirect("/change-password")
   if (!user) redirect(`/login${token ? `?next=${encodeURIComponent(`/scan?t=${token}`)}` : "?next=/scan"}`)
 
@@ -38,11 +40,13 @@ export default async function ScanPage({ searchParams }: { searchParams: Promise
   return (
     <main className="mx-auto flex min-h-svh max-w-md flex-col gap-5 p-5">
       <header className="flex items-center justify-between">
-        <div className="flex items-center gap-2 font-semibold">
-          <span className="grid size-8 place-items-center rounded-lg bg-primary text-primary-foreground">
-            <Users className="size-4" />
+        <div className="flex min-w-0 items-center gap-2">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={brand.logoUrl} alt="" className="size-9 shrink-0 rounded-xl bg-white object-contain p-0.5 ring-1 ring-border" />
+          <span className="min-w-0 leading-tight">
+            <span className="block truncate text-sm font-semibold">{brand.company}</span>
+            <span className="block truncate text-[10px] text-muted-foreground">{t("app.poweredBy", { name: "HR Toch" })}</span>
           </span>
-          HR Toch
         </div>
         <div className="flex items-center gap-1">
           <LanguageSwitcher />

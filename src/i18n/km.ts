@@ -968,4 +968,5 @@ export const km: Dict = {
   "att.punchesTotal": "ស្កេនសរុប",
   "md.err.pastHoliday": "ថ្ងៃបុណ្យនេះបានកន្លងហើយ ហើយបានប៉ះពាល់ដល់របៀបរាប់ថ្ងៃទាំងនោះ។ សូមបិទវា ជំនួសឱ្យការលុប។",
   "app.tagline": "ប្រព័ន្ធ HR តូច និងសាមញ្ញ",
+  "app.poweredBy": "ដំណើរការដោយ {name}",
 }
