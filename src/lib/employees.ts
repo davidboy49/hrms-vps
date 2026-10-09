@@ -12,6 +12,8 @@ const many = (v: string | string[] | undefined) =>
     .filter(Boolean)
 
 export type Filters = {
+  /** the Active list (default) or the Deactivated list: people who left are hidden from the main list */
+  view: "active" | "deactivated"
   q: string
   dept: string[]
   desig: string[]
@@ -25,6 +27,7 @@ export type Filters = {
 
 export function parseFilters(sp: SP): Filters {
   return {
+    view: one(sp.view) === "deactivated" ? "deactivated" : "active",
     q: one(sp.q).trim(),
     dept: many(sp.dept),
     desig: many(sp.desig),
@@ -38,7 +41,7 @@ export function parseFilters(sp: SP): Filters {
 }
 
 export function buildWhere(f: Filters, ids?: string[]): Prisma.EmployeeWhereInput {
-  const and: Prisma.EmployeeWhereInput[] = [{ deletedAt: null }]
+  const and: Prisma.EmployeeWhereInput[] = [{ deletedAt: null }, { status: { countsAsActive: f.view === "active" } }]
   if (ids?.length) and.push({ id: { in: ids } })
   if (f.q)
     and.push({

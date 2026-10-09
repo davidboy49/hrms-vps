@@ -13,6 +13,8 @@ export default async function NewEmployeePage({ searchParams }: { searchParams: 
   await requirePerm("employees.edit")
   const { from } = await searchParams
   const [lk, no, cur] = await Promise.all([lookups(), nextEmployeeNo(), db.setting.findUnique({ where: { key: "company.currency" } })])
+  // new people start active; leaving is recorded later with Deactivate
+  lk.statuses = lk.statuses.filter((s) => s.countsAsActive)
   const active = lk.statuses.find((s) => s.code === "ACTIVE") ?? lk.statuses[0]
   const values: FormValues = {
     employeeNo: no, nameEn: "", nameKm: "", gender: "", dob: "", phone: "", email: "", nationalId: "", address: "",

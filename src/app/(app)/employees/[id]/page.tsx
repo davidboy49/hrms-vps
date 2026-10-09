@@ -3,12 +3,14 @@ import { notFound } from "next/navigation"
 import { Pencil } from "lucide-react"
 import { db } from "@/lib/db"
 import { requirePerm, can } from "@/lib/session"
-import { BASIS_KEY, fmtDate, fmtRate, fmtTime } from "@/lib/format"
+import { BASIS_KEY, fmtDate, fmtRate, fmtTime, localDateKey } from "@/lib/format"
+import { lookups } from "@/lib/employees"
 import { getT, titleOf } from "@/i18n/server"
 import { labelFor, type TFn } from "@/i18n/core"
 import { Button } from "@/components/ui/button"
 import { PersonAvatar } from "@/components/avatar"
 import { StatusBadge } from "@/components/status-badge"
+import { StatusButton } from "../status-dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 
 export const dynamic = "force-dynamic"
@@ -37,15 +39,20 @@ export default async function EmployeePage({ params }: { params: Promise<{ id: s
   const { id } = await params
   const e = await db.employee.findFirst({
     where: { id, deletedAt: null },
-    include: { department: true, designation: true, contractType: true, status: true, location: true, shift: true, scheduleTemplate: { include: { days: true } } },
+    include: { department: true, designation: true, contractType: true, status: true, location: true, shift: true, scheduleTemplate: { include: { days: true } }, user: { select: { id: true } } },
   })
   if (!e) notFound()
   const canEdit = can(user, "employees.edit")
-  const [history, transfers, daily] = await Promise.all([
+  const inactive = !e.status.countsAsActive
+  const canToggle = inactive ? can(user, "employees.reactivate") : can(user, "employees.deactivate")
+  const [history, transfers, daily, events, lk] = await Promise.all([
     canEdit ? db.rateHistory.findMany({ where: { employeeId: id }, orderBy: { effectiveFrom: "desc" }, take: 10 }) : Promise.resolve([]),
     canEdit ? db.branchTransfer.findMany({ where: { employeeId: id }, orderBy: [{ effectiveFrom: "desc" }, { createdAt: "desc" }], take: 10 }) : Promise.resolve([]),
     db.attendanceDaily.findMany({ where: { employeeId: id }, orderBy: { date: "desc" }, take: 14 }),
+    canEdit ? db.employmentEvent.findMany({ where: { employeeId: id }, orderBy: { createdAt: "desc" } }) : Promise.resolve([]),
+    canToggle ? lookups() : Promise.resolve(null),
   ])
+  const toggleStatuses = (lk?.statuses ?? []).filter((x) => x.countsAsActive === inactive).map((x) => ({ value: x.id, label: labelFor(t, "status", x.code, x.name) }))
   // eslint-disable-next-line react-hooks/purity
   const expiring = e.contractEnd && e.contractEnd.getTime() - Date.now() < 60 * 864e5
 
@@ -73,12 +80,18 @@ export default async function EmployeePage({ params }: { params: Promise<{ id: s
             {t("profile.joined", { no: e.employeeNo, date: fmtDate(e.joiningDate), tenure: tenure(e.joiningDate, t) })}
           </p>
         </div>
+        {canToggle && toggleStatuses.length > 0 && (
+          <StatusButton mode={inactive ? "reactivate" : "deactivate"} who={{ id: e.id, name: e.nameEn, no: e.employeeNo, hasLogin: Boolean(e.user) }} statuses={toggleStatuses} today={localDateKey(new Date())} />
+        )}
         {canEdit && (
           <Button render={<Link href={`/employees/${e.id}/edit`} />}>
             <Pencil /> {t("common.edit")}
           </Button>
         )}
       </div>
+      {inactive && (
+        <p className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm">{t("emp.banner.inactive", { date: e.leavingDate ? fmtDate(e.leavingDate) : "—" })}</p>
+      )}
 
       <div className="grid gap-4 lg:grid-cols-2">
         <section className="rounded-lg border p-4">
@@ -123,6 +136,36 @@ export default async function EmployeePage({ params }: { params: Promise<{ id: s
           </dl>
         </section>
       </div>
+
+      {canEdit && events.length > 0 && (
+        <section className="space-y-2">
+          <h2 className="text-sm font-semibold">{t("emp.hist.title")}</h2>
+          <div className="rounded-lg border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t("profile.effective")}</TableHead>
+                  <TableHead>{t("emp.hist.what")}</TableHead>
+                  <TableHead>{t("emp.hist.note")}</TableHead>
+                  <TableHead>{t("profile.changedBy")}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {events.map((ev) => (
+                  <TableRow key={ev.id}>
+                    <TableCell className="whitespace-nowrap">{fmtDate(ev.effectiveDate)}</TableCell>
+                    <TableCell className="whitespace-nowrap">
+                      {t(ev.kind === "DEACTIVATED" ? "emp.hist.deactivated" : "emp.hist.reactivated")}: {ev.fromStatus} → {ev.toStatus}
+                    </TableCell>
+                    <TableCell className="max-w-96 whitespace-pre-wrap">{ev.note}</TableCell>
+                    <TableCell className="whitespace-nowrap text-muted-foreground">{ev.byName}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </section>
+      )}
 
       {canEdit && history.length > 0 && (
         <section className="space-y-2">

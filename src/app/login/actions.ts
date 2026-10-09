@@ -50,6 +50,11 @@ export async function login(_: LoginState, form: FormData): Promise<LoginState> 
   }
 
   const ok = await bcrypt.compare(password, user?.passwordHash ?? (await dummy()))
+  // right password, but the person was deactivated: say so, instead of a confusing "wrong password" (not counted as a failed attempt)
+  if (user && ok && !user.isActive) {
+    await audit(user.id, "login-deactivated", "User", user.id, `ip ${ip}`)
+    return { error: t("login.err.deactivated") }
+  }
   if (!user || !user.isActive || !ok) {
     await rateLimit(`login:ip:${ip}`, IP_MAX_FAILS, 15 * 60)
     if (user) {

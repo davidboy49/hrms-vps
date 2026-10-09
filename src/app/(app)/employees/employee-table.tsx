@@ -1,12 +1,10 @@
 "use client"
 
 import Link from "next/link"
-import { useState, useTransition } from "react"
-import { ArrowDown, ArrowUp, ChevronsUpDown, MoreHorizontal, Trash2, X } from "lucide-react"
-import { toast } from "sonner"
+import { useState } from "react"
+import { ArrowDown, ArrowUp, ChevronsUpDown, MoreHorizontal, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Pager } from "@/components/pager"
@@ -14,7 +12,7 @@ import { PersonAvatar } from "@/components/avatar"
 import { StatusBadge } from "@/components/status-badge"
 import { useQueryParams } from "@/lib/use-query-params"
 import { useT } from "@/i18n/provider"
-import { deleteEmployees } from "./actions"
+import { StatusDialog, type StatusOpt } from "./status-dialog"
 
 export type Row = {
   id: string
@@ -29,6 +27,11 @@ export type Row = {
   rate: string
   statusName: string
   statusColor: string
+  hasLogin: boolean
+  /** Deactivated list only: last working day, the why-note and who did it */
+  leftOn: string | null
+  note: string | null
+  by: string | null
 }
 
 const COLS: { key: string; label: string; sort?: string; right?: boolean; rate?: boolean }[] = [
@@ -51,6 +54,12 @@ export function EmployeeTable({
   canEdit,
   showRate,
   canExport,
+  view,
+  canDeactivate,
+  canReactivate,
+  deactStatuses,
+  reactStatuses,
+  today,
 }: {
   rows: Row[]
   total: number
@@ -61,12 +70,18 @@ export function EmployeeTable({
   canEdit: boolean
   showRate: boolean
   canExport: boolean
+  view: "active" | "deactivated"
+  canDeactivate: boolean
+  canReactivate: boolean
+  deactStatuses: StatusOpt[]
+  reactStatuses: StatusOpt[]
+  today: string
 }) {
   const t = useT()
   const { set } = useQueryParams()
   const [sel, setSel] = useState<Set<string>>(new Set())
-  const [confirm, setConfirm] = useState<string[] | null>(null)
-  const [pending, start] = useTransition()
+  const [target, setTarget] = useState<{ mode: "deactivate" | "reactivate"; row: Row } | null>(null)
+  const gone = view === "deactivated"
 
   const allOn = rows.length > 0 && rows.every((r) => sel.has(r.id))
   const toggle = (id: string) =>
@@ -81,18 +96,6 @@ export function EmployeeTable({
     if (sort === key) set({ sort: key, dir: dir === "asc" ? "desc" : "asc" }, false)
     else set({ sort: key, dir: "asc" }, false)
   }
-
-  function doDelete() {
-    const ids = confirm ?? []
-    start(async () => {
-      const r = await deleteEmployees(ids)
-      toast.success(t("emp.deleted", { n: r.count }))
-      setSel(new Set())
-      setConfirm(null)
-    })
-  }
-
-
 
   const exportSel = () => {
     const p = new URLSearchParams()
@@ -109,11 +112,6 @@ export function EmployeeTable({
           {canExport && (
             <Button size="sm" variant="outline" render={<a href={exportSel()} />}>
               {t("emp.exportSelected")}
-            </Button>
-          )}
-          {canEdit && (
-            <Button size="sm" variant="destructive" onClick={() => setConfirm([...sel])}>
-              <Trash2 /> {t("common.delete")}
             </Button>
           )}
           <Button size="sm" variant="ghost" onClick={() => setSel(new Set())}>
@@ -136,14 +134,21 @@ export function EmployeeTable({
                 </button>
               </TableHead>
             ))}
+            {gone && (
+              <>
+                <TableHead>{t("emp.col.lastDay")}</TableHead>
+                <TableHead>{t("emp.col.note")}</TableHead>
+                <TableHead>{t("emp.col.by")}</TableHead>
+              </>
+            )}
             <TableHead className="w-10" />
           </TableRow>
         </TableHeader>
         <TableBody>
           {rows.length === 0 && (
             <TableRow>
-              <TableCell colSpan={11} className="h-32 text-center text-muted-foreground">
-                {t("emp.noMatch")}
+              <TableCell colSpan={14} className="h-32 text-center text-muted-foreground">
+                {t(gone ? "emp.noDeactivated" : "emp.noMatch")}
               </TableCell>
             </TableRow>
           )}
@@ -173,6 +178,15 @@ export function EmployeeTable({
               <TableCell>
                 <StatusBadge name={r.statusName} color={r.statusColor} />
               </TableCell>
+              {gone && (
+                <>
+                  <TableCell className="whitespace-nowrap">{r.leftOn ?? "—"}</TableCell>
+                  <TableCell className="max-w-64 truncate text-muted-foreground" title={r.note ?? undefined}>
+                    {r.note ?? "—"}
+                  </TableCell>
+                  <TableCell className="whitespace-nowrap text-muted-foreground">{r.by ?? "—"}</TableCell>
+                </>
+              )}
               <TableCell>
                 <DropdownMenu>
                   <DropdownMenuTrigger render={<Button variant="ghost" size="icon-sm" aria-label={t("table.actionsFor", { name: r.name })} />}>
@@ -182,12 +196,14 @@ export function EmployeeTable({
                     <DropdownMenuItem render={<Link href={`/employees/${r.id}`} />}>{t("common.view")}</DropdownMenuItem>
                     {canEdit && <DropdownMenuItem render={<Link href={`/employees/${r.id}/edit`} />}>{t("common.edit")}</DropdownMenuItem>}
                     {canEdit && <DropdownMenuItem render={<Link href={`/employees/new?from=${r.id}`} />}>{t("emp.copy")}</DropdownMenuItem>}
-                    {canEdit && <DropdownMenuSeparator />}
-                    {canEdit && (
-                      <DropdownMenuItem variant="destructive" onClick={() => setConfirm([r.id])}>
-                        {t("common.delete")}
+                    {!gone && canDeactivate && <DropdownMenuSeparator />}
+                    {!gone && canDeactivate && (
+                      <DropdownMenuItem variant="destructive" onClick={() => setTarget({ mode: "deactivate", row: r })}>
+                        {t("emp.deactivate")}
                       </DropdownMenuItem>
                     )}
+                    {gone && canReactivate && <DropdownMenuSeparator />}
+                    {gone && canReactivate && <DropdownMenuItem onClick={() => setTarget({ mode: "reactivate", row: r })}>{t("emp.reactivate")}</DropdownMenuItem>}
                   </DropdownMenuContent>
                 </DropdownMenu>
               </TableCell>
@@ -198,22 +214,17 @@ export function EmployeeTable({
 
       <Pager total={total} page={page} size={size} />
 
-      <Dialog open={confirm !== null} onOpenChange={(o) => !o && setConfirm(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{confirm?.length === 1 ? t("emp.deleteOne") : t("emp.deleteMany", { n: confirm?.length ?? 0 })}</DialogTitle>
-            <DialogDescription>{t("emp.deleteNote")}</DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setConfirm(null)}>
-              {t("common.cancel")}
-            </Button>
-            <Button variant="destructive" onClick={doDelete} disabled={pending}>
-              {t("common.delete")}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {target && (
+        <StatusDialog
+          key={target.row.id + target.mode}
+          open
+          onOpenChange={(o) => !o && setTarget(null)}
+          mode={target.mode}
+          who={{ id: target.row.id, name: target.row.name, no: target.row.employeeNo, hasLogin: target.row.hasLogin }}
+          statuses={target.mode === "deactivate" ? deactStatuses : reactStatuses}
+          today={today}
+        />
+      )}
     </div>
   )
 }

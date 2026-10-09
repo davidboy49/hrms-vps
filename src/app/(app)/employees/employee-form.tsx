@@ -201,7 +201,7 @@ export function EmployeeForm({
           {field("employeeNo", t("form.employeeNo"), text("employeeNo", { required: true, className: "font-mono" }))}
           {field("departmentId", t("emp.department"), select("departmentId", lookups.departments))}
           {field("designationId", t("emp.designation"), select("designationId", desigs))}
-          {field("statusId", t("emp.status"), select("statusId", lookups.statuses, undefined, "status"))}
+          {field("statusId", t("emp.status"), select("statusId", lookups.statuses, undefined, "status"), t("emp.statusHint"))}
           {field("joiningDate", t("emp.joining"), text("joiningDate", { type: "date", required: true }))}
           {field("locationId", t("form.location"), select("locationId", lookups.locations, "—"))}
           {field("shiftId", t("form.shift"), select("shiftId", lookups.shifts, "—"))}

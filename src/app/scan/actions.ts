@@ -31,9 +31,11 @@ export async function punchByQr(token: string, type: "IN" | "OUT", geo: { lat: n
   if (!r.ok) return { ok: false, error: t(QR_REASON_KEY[r.reason]) }
   const loc = r.loc
 
-  const me = await db.user.findUnique({ where: { id: user.id }, include: { employee: true } })
-  if (!me?.isActive) return { ok: false, error: t("scan.err.disabled") }
+  const me = await db.user.findUnique({ where: { id: user.id }, include: { employee: { include: { status: true } } } })
+  if (!me?.isActive) return { ok: false, error: t("scan.err.deactivated") }
   if (!me.employee || me.employee.deletedAt) return { ok: false, error: t("scan.err.notLinked") }
+  // a deactivated employee cannot check in, even if their login was turned back on by mistake
+  if (!me.employee.status.countsAsActive) return { ok: false, error: t("scan.err.deactivated") }
 
   // Location check. A printed (permanent) code relies on it completely, so it is mandatory there.
   const hasCoords = loc.latitude != null && loc.longitude != null

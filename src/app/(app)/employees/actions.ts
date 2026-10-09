@@ -66,7 +66,9 @@ export async function saveEmployee(id: string | null, _: FormState, form: FormDa
   const status = await db.employeeStatus.findUnique({ where: { id: d.statusId } })
   const photo = form.get("photo")
   const removeFlag = form.get("removePhoto") === "1"
-  const prev = id ? await db.employee.findUnique({ where: { id } }) : null
+  const prev = id ? await db.employee.findUnique({ where: { id }, include: { status: true } }) : null
+  // moving between active and not active (left the company, came back) only happens through Deactivate / Reactivate, which ask for a reason
+  if (status && (prev ? prev.status.countsAsActive !== status.countsAsActive : !status.countsAsActive)) return { error: t("err.fixFields"), fields: { statusId: t("emp.err.statusLocked") } }
 
   let photoUrl: string | null | undefined = undefined
   try {
@@ -133,23 +135,6 @@ async function logTransfer(employeeId: string, fromId: string | null, toId: stri
     toId ? db.location.findUnique({ where: { id: toId } }) : null,
   ])
   await db.branchTransfer.create({ data: { employeeId, fromName: from?.name ?? null, toName: to?.name ?? null, effectiveFrom, changedBy } })
-}
-
-export async function deleteEmployees(ids: string[]) {
-  const user = await assertPerm("employees.edit")
-  if (!ids.length) return { count: 0 }
-  const r = await db.employee.updateMany({ where: { id: { in: ids }, deletedAt: null }, data: { deletedAt: new Date(), zkPin: null } })
-  await audit(user.id, "delete", "Employee", undefined, `${r.count} employee(s)`)
-  revalidatePath("/employees")
-  return { count: r.count }
-}
-
-export async function setStatus(ids: string[], statusId: string) {
-  const user = await assertPerm("employees.edit")
-  const r = await db.employee.updateMany({ where: { id: { in: ids }, deletedAt: null }, data: { statusId } })
-  await audit(user.id, "status", "Employee", undefined, `${r.count} employee(s) -> ${statusId}`)
-  revalidatePath("/employees")
-  return { count: r.count }
 }
 
 export async function suggestEmployeeNo() {
