@@ -29,7 +29,8 @@ async function otherUserAdmin(exceptUserId: string) {
 }
 
 /**
- * Takes someone off the active staff list. There is no way to delete an employee: they are deactivated with a reason,
+ * Takes someone off the active staff list. There is no way to delete an employee: they are deactivated with a reason (the status),
+ * and an optional note,
  * and everything about them (attendance, leave, pay history) is kept.
  */
 export async function deactivateEmployee(id: string, raw: { statusId: string; date: string; note: string }): Promise<StatusResult> {
@@ -39,7 +40,6 @@ export async function deactivateEmployee(id: string, raw: { statusId: string; da
   if (!lim.ok) return { error: t("emp.err.rate", { wait: waitText(lim.retryAfter, t) }) }
   const p = input.safeParse(raw)
   if (!p.success) return { error: t("emp.err.date") }
-  if ([...p.data.note].length < MIN_NOTE) return { error: t("emp.err.note", { min: MIN_NOTE }) }
 
   const emp = await db.employee.findFirst({
     where: { id, deletedAt: null },

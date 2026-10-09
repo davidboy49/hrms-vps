@@ -28,7 +28,8 @@ export function StatusDialog({ open, onOpenChange, mode, who, statuses, today }:
   const [pending, start] = useTransition()
   const deact = mode === "deactivate"
   const len = [...note.trim()].length
-  const ready = len >= MIN_NOTE && statusId !== "" && date !== ""
+  // the note is optional when someone leaves, but required (at least MIN_NOTE characters) when they come back
+  const ready = (deact || len >= MIN_NOTE) && statusId !== "" && date !== ""
 
   function submit() {
     setErr(null)
@@ -69,7 +70,7 @@ export function StatusDialog({ open, onOpenChange, mode, who, statuses, today }:
           <div className="space-y-1.5">
             <Label htmlFor="st-note">{t(deact ? "emp.deact.note" : "emp.react.note", { min: MIN_NOTE })}</Label>
             <Textarea id="st-note" value={note} onChange={(e) => setNote(e.target.value)} rows={4} />
-            <p className={`text-xs ${len >= MIN_NOTE ? "text-muted-foreground" : "text-destructive"}`}>{t("emp.count", { n: len, min: MIN_NOTE })}</p>
+            {!deact && <p className={`text-xs ${len >= MIN_NOTE ? "text-muted-foreground" : "text-destructive"}`}>{t("emp.count", { n: len, min: MIN_NOTE })}</p>}
           </div>
           {deact ? (
             <ul className="list-disc space-y-1 pl-5 text-muted-foreground">
