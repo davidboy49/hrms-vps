@@ -62,6 +62,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
           fields={[
             { key: "company.name", label: t("set.companyName"), hint: t("set.companyNameHint") },
             { key: "company.currency", label: t("set.currency"), type: "currency", hint: t("set.currencyHint") },
+            { key: "scan.khmerOnly", label: t("set.scanLang"), type: "khmerOnly", hint: t("set.scanLangHint") },
           ]}
         />
         </div>
