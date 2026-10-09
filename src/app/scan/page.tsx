@@ -12,12 +12,15 @@ import { ActiveAnnouncements } from "@/components/active-announcements"
 import { getT, titleOf } from "@/i18n/server"
 import { getBranding } from "@/lib/branding"
 import { LanguageSwitcher } from "@/components/language-switcher"
+import { I18nProvider } from "@/i18n/provider"
 
 export const generateMetadata = titleOf("scan.title")
 export const dynamic = "force-dynamic"
 
 export default async function ScanPage({ searchParams }: { searchParams: Promise<{ t?: string }> }) {
-  const t = await getT()
+  // a company can make this page Khmer only (Settings → Company): staff then never see the language switch
+  const khmerOnly = (await db.setting.findUnique({ where: { key: "scan.khmerOnly" } }))?.value === "1"
+  const t = await getT(khmerOnly ? "km" : undefined)
   const sp = await searchParams
   const token = typeof sp.t === "string" ? sp.t : ""
   const user = await getSession()
@@ -37,7 +40,7 @@ export default async function ScanPage({ searchParams }: { searchParams: Promise
       ])
     : [[], "IN" as const]
 
-  return (
+  const page = (
     <main className="mx-auto flex min-h-svh w-full max-w-md flex-col gap-5 p-5">
       {/* on a narrow phone the controls drop under the company name instead of pushing the page wider than the screen */}
       <header className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
@@ -50,7 +53,7 @@ export default async function ScanPage({ searchParams }: { searchParams: Promise
           </span>
         </div>
         <div className="ml-auto flex shrink-0 items-center gap-1">
-          <LanguageSwitcher />
+          {!khmerOnly && <LanguageSwitcher />}
           {can(user, "dashboard.view") && (
             <Button variant="ghost" size="sm" render={<Link href="/" />}>
               {t("nav.dashboard")}
@@ -104,4 +107,5 @@ export default async function ScanPage({ searchParams }: { searchParams: Promise
       )}
     </main>
   )
+  return khmerOnly ? <I18nProvider locale="km">{page}</I18nProvider> : page
 }

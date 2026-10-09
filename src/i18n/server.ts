@@ -9,8 +9,8 @@ export async function getLocale(): Promise<Locale> {
 
 export { dictFor }
 
-export async function getT(): Promise<TFn> {
-  const dict = dictFor(await getLocale())
+export async function getT(force?: Locale): Promise<TFn> {
+  const dict = dictFor(force ?? (await getLocale()))
   return (key: string, vars?: Vars) => translate(dict, key, vars)
 }
 

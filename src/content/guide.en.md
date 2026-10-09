@@ -69,7 +69,7 @@ Open **Masterdata** and fill in, in this order:
 3. **Shifts**: start and end time, grace minutes and a colour for the roster.
 4. **Holidays**: public holidays are not counted as work days or leave days.
 
-Then open **Settings → Company** to set the company name and logo. They appear in the sidebar and on the sign-in page.
+Then open **Settings → Company** to set the company name and logo. They appear in the sidebar and on the sign-in page. The same page lets an Admin set the **Check-in page language** to *Khmer only*, which hides the language switch on the staff check-in page (HR screens keep both languages).
 
 ### 4.2 Employees
 - **Employees → Add** to create a record: photo, names (Khmer and English), department, designation, contract, joining date, pay rate, location, shift and weekly schedule.

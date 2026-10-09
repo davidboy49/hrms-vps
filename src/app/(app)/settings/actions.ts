@@ -15,7 +15,7 @@ import { removePhoto, savePhoto } from "@/lib/uploads"
 
 type R = { error?: string; ok?: boolean }
 
-const SETTING_KEYS = ["company.name", "company.currency", "employee.prefix", "attendance.lateGraceMin", "log.lateAfterMin", "log.earlyBeforeMin"] as const
+const SETTING_KEYS = ["company.name", "company.currency", "scan.khmerOnly", "employee.prefix", "attendance.lateGraceMin", "log.lateAfterMin", "log.earlyBeforeMin"] as const
 
 export async function saveSettings(form: FormData): Promise<R> {
   const t = await getT()
@@ -24,6 +24,7 @@ export async function saveSettings(form: FormData): Promise<R> {
     const v = form.get(k)
     if (v == null) continue
     const value = String(v).trim()
+    if (k === "scan.khmerOnly" && value !== "0" && value !== "1") continue
     if (k === "employee.prefix" && !/^[A-Za-z0-9-]{1,8}$/.test(value)) return { error: t("set.err.prefix") }
     if ((k === "log.lateAfterMin" || k === "log.earlyBeforeMin") && !(Number(value) >= 0 && Number(value) <= 240)) return { error: t("set.err.minutes240") }
     if (k === "attendance.lateGraceMin" && !(Number(value) >= 0 && Number(value) <= 120)) return { error: t("set.err.minutes120") }

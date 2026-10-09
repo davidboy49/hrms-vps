@@ -40,6 +40,11 @@ export function SettingsForm({ values, fields, disabled }: { values: Record<stri
               <option value="USD">USD</option>
               <option value="KHR">KHR</option>
             </NativeSelect>
+          ) : f.type === "khmerOnly" ? (
+            <NativeSelect id={f.key} name={f.key} defaultValue={values[f.key] === "1" ? "1" : "0"} disabled={disabled}>
+              <option value="0">{t("set.scanBoth")}</option>
+              <option value="1">{t("set.scanKhmerOnly")}</option>
+            </NativeSelect>
           ) : (
             <Input id={f.key} name={f.key} type={f.type ?? "text"} defaultValue={values[f.key] ?? ""} disabled={disabled} />
           )}
