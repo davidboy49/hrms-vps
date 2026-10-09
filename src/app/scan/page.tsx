@@ -42,7 +42,7 @@ export default async function ScanPage({ searchParams }: { searchParams: Promise
           <span className="grid size-8 place-items-center rounded-lg bg-primary text-primary-foreground">
             <Users className="size-4" />
           </span>
-          PeopleDesk
+          HR Toch
         </div>
         <div className="flex items-center gap-1">
           <LanguageSwitcher />

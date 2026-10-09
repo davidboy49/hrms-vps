@@ -728,7 +728,7 @@ export const km: Dict = {
   "tg.err.notReady": "សូមរក្សាទុក token និង Chat ID ហើយធីក បើកដំណើរការ ជាមុនសិន។",
   "tg.err.sendFailed": "កំហុស Telegram៖ {why}",
   "tg.err.saveTokenFirst": "សូមរក្សាទុក token របស់ bot ជាមុនសិន។",
-  "tg.msg.test": "✅ សារសាកល្បង PeopleDesk។ ផ្ញើដោយ {name}។ ការជូនដំណឹងដំណើរការ។",
+  "tg.msg.test": "✅ សារសាកល្បង HR Toch។ ផ្ញើដោយ {name}។ ការជូនដំណឹងដំណើរការ។",
   "tg.msg.announce": "📢 <b>{title}</b>\n\n{body}",
   "tg.msg.late": "⏰ {name} ({no}) ចូលយឺត៖ {time} យឺត {m} នាទី · {place}",
   "tg.msg.far": "⚠️ {name} ({no}) ព្យាយាម {type} នៅ {place} ប៉ុន្តែនៅឆ្ងាយ {m} ម៉ែត្រ",
@@ -841,7 +841,7 @@ export const km: Dict = {
   "tg.msg.in": "🟢 {name} ({no}) បានចូលម៉ោង {time} · {place}",
   "tg.msg.out": "🔴 {name} ({no}) បានចេញម៉ោង {time} · {place}",
   // ---- guide
-  "nav.guide": "សៀវភៅណែនាំ", "guide.desc": "របៀបប្រើប្រាស់ PeopleDesk។ ប្ដូរភាសាខ្មែរ ឬអង់គ្លេសដោយប៊ូតុងភាសានៅខាងលើ។", "guide.contents": "មាតិកា",
+  "nav.guide": "សៀវភៅណែនាំ", "guide.desc": "របៀបប្រើប្រាស់ HR Toch។ ប្ដូរភាសាខ្មែរ ឬអង់គ្លេសដោយប៊ូតុងភាសានៅខាងលើ។", "guide.contents": "មាតិកា",
   // ---- error pages
   "err.notFoundTitle": "រកមិនឃើញទំព័រ", "err.notFoundDesc": "ទំព័រនេះមិនមាន ឬត្រូវបានផ្លាស់ទី ឬលុបចោល។",
   "err.title": "មានបញ្ហាកើតឡើង", "err.desc": "មិនអាចបង្ហាញទំព័របានទេ។ សូមព្យាយាមម្តងទៀត ហើយបើនៅតែកើតឡើង សូមជូនដំណឹងដល់អ្នកគ្រប់គ្រង។",
@@ -967,4 +967,5 @@ export const km: Dict = {
   "att.devActivated": "បានបើកឧបករណ៍",
   "att.punchesTotal": "ស្កេនសរុប",
   "md.err.pastHoliday": "ថ្ងៃបុណ្យនេះបានកន្លងហើយ ហើយបានប៉ះពាល់ដល់របៀបរាប់ថ្ងៃទាំងនោះ។ សូមបិទវា ជំនួសឱ្យការលុប។",
+  "app.tagline": "ប្រព័ន្ធ HR តូច និងសាមញ្ញ",
 }

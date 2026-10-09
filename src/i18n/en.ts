@@ -728,7 +728,7 @@ export const en: Dict = {
   "tg.err.notReady": "Save a token and chat ID, and tick Enabled, first.",
   "tg.err.sendFailed": "Telegram error: {why}",
   "tg.err.saveTokenFirst": "Save the bot token first.",
-  "tg.msg.test": "✅ PeopleDesk test message. Sent by {name}. Alerts are working.",
+  "tg.msg.test": "✅ HR Toch test message. Sent by {name}. Alerts are working.",
   "tg.msg.announce": "📢 <b>{title}</b>\n\n{body}",
   "tg.msg.late": "⏰ {name} ({no}) checked in late: {time}, {m} min after the start · {place}",
   "tg.msg.far": "⚠️ {name} ({no}) tried to {type} at {place} but is {m} m away",
@@ -841,7 +841,7 @@ export const en: Dict = {
   "tg.msg.in": "🟢 {name} ({no}) checked in at {time} · {place}",
   "tg.msg.out": "🔴 {name} ({no}) checked out at {time} · {place}",
   // ---- guide
-  "nav.guide": "User guide", "guide.desc": "How to use PeopleDesk. Choose Khmer or English with the language switch at the top.", "guide.contents": "Contents",
+  "nav.guide": "User guide", "guide.desc": "How to use HR Toch. Choose Khmer or English with the language switch at the top.", "guide.contents": "Contents",
   // ---- error pages
   "err.notFoundTitle": "Page not found", "err.notFoundDesc": "This page does not exist, or it has been moved or deleted.",
   "err.title": "Something went wrong", "err.desc": "The page could not be shown. Try again, and if it keeps happening, tell your administrator.",
@@ -967,4 +967,5 @@ export const en: Dict = {
   "att.devActivated": "Device activated",
   "att.punchesTotal": "punches in total",
   "md.err.pastHoliday": "This holiday has already passed and changed how those days were counted. Deactivate it instead of deleting it.",
+  "app.tagline": "Small, simple HR",
 }

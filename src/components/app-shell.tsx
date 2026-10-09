@@ -89,7 +89,7 @@ function Brand({ company, logoUrl, compact }: { company: string; logoUrl: string
           <span className="block truncate text-sm font-semibold" title={company}>
             {company}
           </span>
-          <span className="block text-[11px] text-muted-foreground">PeopleDesk</span>
+          <span className="block text-[11px] text-muted-foreground">HR Toch</span>
         </span>
       )}
     </div>

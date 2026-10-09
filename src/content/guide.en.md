@@ -1,6 +1,6 @@
-# PeopleDesk user guide
+# HR Toch user guide
 
-PeopleDesk is an HR system for employee records, attendance, schedules, leave, overtime and alerts. It works in a browser on a computer or phone, in Khmer or English (switch with the **ខ្មែរ / EN** buttons at the top).
+HR Toch is a small, simple HR system for employee records, attendance, schedules, leave, overtime and alerts. It works in a browser on a computer or phone, in Khmer or English (switch with the **ខ្មែរ / EN** buttons at the top).
 
 ---
 
@@ -137,7 +137,7 @@ Notes:
 Alerts go to a Telegram group that you choose.
 1. In Telegram, open **@BotFather**, send `/newbot` and follow the steps. Copy the **token** (keep it private).
 2. Create a group, add the bot, and send `/start@YourBotName` in the group.
-3. In PeopleDesk open **Settings → Notifications**. Paste the token and save, then press **Find chat** and pick the group (the chat ID starts with a minus sign).
+3. In HR Toch open **Settings → Notifications**. Paste the token and save, then press **Find chat** and pick the group (the chat ID starts with a minus sign).
 4. Tick **Enabled**, choose what to send, save, and press **Send test message**.
 
 What can be sent:
