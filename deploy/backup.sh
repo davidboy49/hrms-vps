@@ -6,6 +6,19 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 BACKUP_DIR="${BACKUP_DIR:-/var/backups/peopledesk}"
 STAMP="$(date +%Y%m%d-%H%M%S)"
+
+# Alerts, so a failed or missing backup is never silent: Telegram (the LOGWATCH_* bot in .env) and, if you set BACKUP_HEARTBEAT_URL in .env,
+# an Uptime Kuma "push" monitor that raises its own alarm when no heartbeat arrives (see deploy/RUNBOOK.md).
+envval() { grep -E "^$1=" .env 2>/dev/null | head -1 | cut -d= -f2- || true; }
+TG_TOKEN="$(envval LOGWATCH_BOT_TOKEN)"
+TG_CHAT="$(envval LOGWATCH_CHAT_ID)"
+BEAT="${BACKUP_HEARTBEAT_URL:-$(envval BACKUP_HEARTBEAT_URL)}"
+BEAT="${BEAT%%\?*}"
+TG_API="${TELEGRAM_API_BASE:-https://api.telegram.org}"
+tell() { if [ -n "$TG_TOKEN" ] && [ -n "$TG_CHAT" ]; then curl -s --max-time 10 "$TG_API/bot$TG_TOKEN/sendMessage" --data-urlencode "chat_id=$TG_CHAT" --data-urlencode "text=$1" >/dev/null || true; fi; }
+beat() { if [ -n "$BEAT" ]; then curl -s --max-time 10 -G "$BEAT" --data-urlencode "status=$1" --data-urlencode "msg=$2" >/dev/null || true; fi; }
+trap 'rc=$?; echo "backup FAILED (exit $rc) at line $LINENO"; tell "❌ HRMS backup FAILED on $(hostname) at $STAMP. See ~/peopledesk-backup.log"; beat down "failed at line $LINENO"; exit $rc' ERR
+
 mkdir -p "$BACKUP_DIR"
 
 # database: a compressed custom-format dump that pg_restore can load
@@ -27,3 +40,4 @@ if command -v rclone >/dev/null && rclone listremotes | grep -q '^r2:$'; then
 fi
 
 echo "backup ok: $BACKUP_DIR ($STAMP)"
+beat up "ok $STAMP"
