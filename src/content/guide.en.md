@@ -74,6 +74,9 @@ Then open **Settings → Company** to set the company name and logo. They appear
 ### 4.2 Employees
 - **Employees → Add** to create a record: photo, names (Khmer and English), department, designation, contract, joining date, pay rate, location, shift and weekly schedule.
 - Use **search and filters**, and the **Import / Export** buttons to load many employees from a spreadsheet. A template can be downloaded from **Settings → Templates**.
+- **Employees are never deleted.** When someone leaves, open their profile (or the **⋯** menu in the list) and press **Deactivate**. Choose the **reason** (Resigned, Terminated, ...), the **last working day**, and write **why in at least 20 characters**. Their login is turned off right away, waiting leave and overtime requests are cancelled, and they move to the **Deactivated** tab. Their attendance, leave and pay history is kept. You need the permission *Deactivate employees* (HR has it).
+- To bring someone back, open the **Deactivated** tab, then **⋯ → Reactivate** (or the button on their profile). Choose the new status and start date, write at least 20 characters explaining why, and tick *Turn their login back on* if they should sign in again. You need the permission *Reactivate employees* (Admin has it; it can be given to a role in **Settings → Roles**). The profile keeps an **Employment history** of every deactivation and reactivation with the reason and who did it.
+- Switching between *active* and *not active* is only possible with Deactivate and Reactivate, not in the edit form or the import.
 - To let a person sign in and scan with their phone, create a user in **Settings → Users** and link it to their employee record. For many people at once, see 4.9.
 
 ### 4.3 QR attendance
@@ -165,6 +168,7 @@ If the group stays silent, check that the bot is in the group and that Enabled i
 | No Telegram messages | Admin: check the token, chat ID, Enabled box, and the bot is in the group. Use the test button. |
 | "Temporary password has expired" | Ask HR to reset the password in Settings → Users, then give the new temporary password to the person. |
 | Lost the sheet of temporary passwords | The passwords cannot be shown again. Use **Reset password** for each person who needs one. |
+| "Your user has been deactivated" when signing in or scanning | The employee was deactivated by HR (for example after resigning). If this is a mistake, ask someone with the *Reactivate employees* permission to reactivate them. |
 | Wrong language | Use the **ខ្មែរ / EN** switch at the top. |
 
 ---

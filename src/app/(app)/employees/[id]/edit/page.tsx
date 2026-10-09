@@ -28,6 +28,8 @@ export default async function EditEmployeePage({ params }: { params: Promise<{ i
     if (ds && !lk.designations.some((x) => x.id === ds.id)) lk.designations.push(ds)
     if (c && !lk.contractTypes.some((x) => x.id === c.id)) lk.contractTypes.push(c)
     if (s && !lk.statuses.some((x) => x.id === s.id)) lk.statuses.push(s)
+    // active and inactive are only switched with Deactivate / Reactivate (they ask for a reason), so offer just the statuses of the same kind
+    if (s) lk.statuses = lk.statuses.filter((x) => x.countsAsActive === s.countsAsActive)
   }
   await keep()
   const tplPersonal = e.scheduleTemplateId ? Boolean((await db.scheduleTemplate.findUnique({ where: { id: e.scheduleTemplateId }, select: { isPersonal: true } }))?.isPersonal) : false

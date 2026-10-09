@@ -144,6 +144,7 @@ export async function runImport(buf: ArrayBuffer, commit: boolean, t: TFn): Prom
     if (!ct) errs.push(t("io.err.contract", { v: contract }))
     const st = find(sts, status)
     if (!st) errs.push(t("io.err.status", { v: status }))
+    else if (!st.countsAsActive) errs.push(t("io.err.statusActive", { v: status }))
     if (!isDate(joining)) errs.push(t("io.err.joining"))
     if (dob && !isDate(dob)) errs.push(t("io.err.dob"))
     if (cend && !isDate(cend)) errs.push(t("io.err.cend"))

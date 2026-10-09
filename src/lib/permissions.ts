@@ -5,7 +5,7 @@
  */
 export const PERMISSION_GROUPS = [
   { group: "dashboard", perms: ["dashboard.view", "alerts.view"] },
-  { group: "employees", perms: ["employees.view", "employees.edit", "employees.import", "employees.export"] },
+  { group: "employees", perms: ["employees.view", "employees.edit", "employees.import", "employees.export", "employees.deactivate", "employees.reactivate"] },
   { group: "attendance", perms: ["attendance.view", "attendance.manage", "attendance.export", "attendance.devices"] },
   { group: "roster", perms: ["roster.view", "roster.edit", "qr.manage"] },
   { group: "leave", perms: ["leave.viewAll", "leave.manage", "overtime.viewAll", "overtime.manage"] },
@@ -22,7 +22,7 @@ export const isPermission = (p: string): p is Permission => VALID.has(p)
 const MANAGER: Permission[] = ["dashboard.view", "alerts.view", "employees.view", "attendance.view", "roster.view", "leave.viewAll", "overtime.viewAll"]
 const HR: Permission[] = [
   ...MANAGER,
-  "employees.edit", "employees.import", "employees.export", "attendance.manage", "attendance.export", "roster.edit", "qr.manage",
+  "employees.edit", "employees.import", "employees.export", "employees.deactivate", "attendance.manage", "attendance.export", "roster.edit", "qr.manage",
   "leave.manage", "overtime.manage", "announcements.manage", "masterdata.view", "masterdata.edit", "settings.view", "users.createBatch",
 ]
 

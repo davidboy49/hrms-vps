@@ -231,6 +231,7 @@ model Employee {
   deletedAt          DateTime?
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
+  employmentEvents   EmploymentEvent[]
   rateHistory        RateHistory[]
   transfers          BranchTransfer[]
   user               User?
@@ -245,6 +246,30 @@ model Employee {
   @@index([statusId])
   @@index([joiningDate])
   @@index([deletedAt])
+}
+
+enum EmploymentEventKind {
+  DEACTIVATED
+  REACTIVATED
+}
+
+/// Why someone left or came back, kept forever. Append-only: the app never edits or deletes these rows.
+model EmploymentEvent {
+  id            String              @id @default(cuid())
+  employeeId    String
+  employee      Employee            @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+  kind          EmploymentEventKind
+  /// status names are copied so the history survives renames
+  fromStatus    String
+  toStatus      String
+  /// last working day (deactivated) or start date (reactivated)
+  effectiveDate DateTime            @db.Date
+  note          String
+  byUserId      String?
+  byName        String
+  createdAt     DateTime            @default(now())
+
+  @@index([employeeId, createdAt])
 }
 
 model RateHistory {
