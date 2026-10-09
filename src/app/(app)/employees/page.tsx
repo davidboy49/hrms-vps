@@ -56,7 +56,7 @@ export default async function EmployeesPage({ searchParams }: { searchParams: Pr
     statusColor: e.status.color,
     hasLogin: Boolean(e.user),
     leftOn: e.leavingDate ? fmtDate(e.leavingDate) : null,
-    note: lastEvent.get(e.id)?.note ?? null,
+    note: lastEvent.get(e.id)?.note || null,
     by: lastEvent.get(e.id)?.byName ?? null,
   }))
   const optStatus = (xs: typeof lk.statuses) => xs.map((x) => ({ value: x.id, label: labelFor(t, "status", x.code, x.name) }))

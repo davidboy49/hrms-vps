@@ -922,7 +922,7 @@ export const en: Dict = {
   "emp.deact.intro": "{name} ({no}) leaves the active list and moves to the Deactivated tab. Nothing is deleted.",
   "emp.deact.reason": "Reason",
   "emp.deact.lastDay": "Last working day",
-  "emp.deact.note": "Explain why (at least {min} characters)",
+  "emp.deact.note": "Note (optional)",
   "emp.deact.e1": "Their login is turned off and they are signed out right away.",
   "emp.deact.e1none": "They have no login to turn off.",
   "emp.deact.e2": "Waiting leave and overtime requests are cancelled, and approved leave that starts after the last day is removed.",
