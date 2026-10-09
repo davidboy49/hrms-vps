@@ -12,6 +12,8 @@ import { getT } from "@/i18n/server"
 export async function syncOne(id: string) {
   const t = await getT()
   await assertPerm("attendance.manage")
+  const dev = await db.device.findUnique({ where: { id }, select: { isActive: true } })
+  if (!dev?.isActive) return { ok: false as const, message: t("att.err.inactive") }
   const r = await syncDevice(id)
   revalidatePath("/attendance")
   return r.ok ? r : { ...r, message: t(r.message) }
@@ -68,9 +70,31 @@ export async function saveDevice(id: string | null, form: FormData): Promise<{ e
   return {}
 }
 
-export async function deleteDevice(id: string) {
+/**
+ * Punches are attendance records and are never deleted with a device (the database refuses it too).
+ * A device with punches is deactivated instead; only one that never recorded anything can be removed.
+ */
+export async function deleteDevice(id: string): Promise<{ error?: string }> {
+  const t = await getT()
   const user = await assertPerm("attendance.devices")
-  await db.device.delete({ where: { id } })
-  await audit(user.id, "delete", "Device", id)
+  const d = await db.device.findUnique({ where: { id }, include: { _count: { select: { punches: true } } } })
+  if (!d) return {}
+  if (d._count.punches > 0) return { error: t("att.err.hasPunches", { n: d._count.punches }) }
+  try {
+    await db.device.delete({ where: { id } })
+  } catch {
+    return { error: t("att.err.hasPunches", { n: 1 }) }
+  }
+  await audit(user.id, "delete", "Device", id, d.name)
   revalidatePath("/attendance")
+  return {}
+}
+
+/** Switches a device off (no sync, no push) or back on. Its history stays. */
+export async function setDeviceActive(id: string, active: boolean): Promise<{ error?: string }> {
+  const user = await assertPerm("attendance.devices")
+  await db.device.update({ where: { id }, data: { isActive: active } })
+  await audit(user.id, active ? "activate" : "deactivate", "Device", id)
+  revalidatePath("/attendance")
+  return {}
 }

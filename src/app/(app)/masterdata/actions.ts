@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache"
 import { db } from "@/lib/db"
 import { assertPerm } from "@/lib/session"
 import { audit } from "@/lib/audit"
+import { localDateKey } from "@/lib/format"
 import { entityByKey, type FieldDef } from "@/lib/masterdata"
 import { getT } from "@/i18n/server"
 
@@ -69,9 +70,15 @@ export async function deleteRow(entityKey: string, id: string): Promise<{ error?
   const user = await assertPerm("masterdata.delete")
   const ent = entityByKey(entityKey)
   if (!ent) return { error: t("md.err.unknown") }
+  // a holiday that has already passed changed how those days were counted (lateness, leave days); it can be switched off but not removed
+  if (ent.model === "holiday") {
+    const h = await db.holiday.findUnique({ where: { id }, select: { date: true } })
+    if (h && h.date.toISOString().slice(0, 10) < localDateKey(new Date())) return { error: t("md.err.pastHoliday") }
+  }
   try {
     await delegate(ent.model).delete({ where: { id } })
   } catch {
+    // the database refuses to delete anything still used by employees, devices, schedules or leave balances
     return { error: t("md.err.inUse") }
   }
   await audit(user.id, "delete", ent.model, id)
