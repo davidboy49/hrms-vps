@@ -968,4 +968,5 @@ export const en: Dict = {
   "att.punchesTotal": "punches in total",
   "md.err.pastHoliday": "This holiday has already passed and changed how those days were counted. Deactivate it instead of deleting it.",
   "app.tagline": "Small, simple HR",
+  "app.poweredBy": "Powered by {name}",
 }

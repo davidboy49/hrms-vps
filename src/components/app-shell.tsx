@@ -1,5 +1,6 @@
 "use client"
 
+import { PoweredBy } from "@/components/powered-by"
 import Link from "next/link"
 import { usePathname, useSearchParams } from "next/navigation"
 import { useEffect, useState } from "react"
@@ -325,7 +326,10 @@ export function AppShell({ user, company, logoUrl, initialPinned, initialFavorit
           <div className="-mx-1 min-h-0 flex-1 overflow-y-auto overscroll-contain px-1">
             <Nav perms={user.perms} favs={favs} onToggleFav={toggleFav} compact={!expanded} />
           </div>
-          {version && expanded && <p className="shrink-0 truncate pt-2 font-mono text-[10px] text-muted-foreground" title={version}>{version}</p>}
+          <div className="shrink-0 space-y-1 pt-2">
+            <PoweredBy compact={!expanded} />
+            {version && expanded && <p className="truncate font-mono text-[10px] text-muted-foreground" title={version}>{version}</p>}
+          </div>
         </div>
       </aside>
 
@@ -340,7 +344,10 @@ export function AppShell({ user, company, logoUrl, initialPinned, initialFavorit
           <div className="-mx-1 min-h-0 flex-1 overflow-y-auto overscroll-contain px-1">
             <Nav perms={user.perms} favs={favs} onToggleFav={toggleFav} onNavigate={() => setOpen(false)} />
           </div>
-          {version && <p className="shrink-0 truncate pt-2 font-mono text-[10px] text-muted-foreground" title={version}>{version}</p>}
+          <div className="shrink-0 space-y-1 pt-2">
+            <PoweredBy />
+            {version && <p className="truncate font-mono text-[10px] text-muted-foreground" title={version}>{version}</p>}
+          </div>
         </SheetContent>
       </Sheet>
 

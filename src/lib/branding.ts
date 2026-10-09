@@ -1,8 +1,9 @@
 import { db } from "@/lib/db"
 
 /** The HRS system logo, used until a company uploads its own in Settings → Company. */
-export const DEFAULT_LOGO = "/brand/hrs-icon.png"
-export const DEFAULT_WORDMARK = "/brand/hrs-logo.png"
+// the product (HR Toch) logo: the full logo for the sign-in page and the mark alone for small spots. A company's own logo (Settings → Company) replaces the mark.
+export const DEFAULT_LOGO = "/brand/hr-toch-mark.png"
+export const DEFAULT_WORDMARK = "/brand/hr-toch-logo.png"
 
 /** Company name and logo, shared by the sidebar and the sign-in page. */
 export async function getBranding(): Promise<{ company: string; logoUrl: string; custom: boolean }> {
