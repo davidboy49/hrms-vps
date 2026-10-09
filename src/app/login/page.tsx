@@ -3,6 +3,7 @@ import { getPendingPasswordUser, getSession } from "@/lib/session"
 import { LoginForm } from "./login-form"
 import { LoginArt } from "./login-art"
 import { LanguageSwitcher } from "@/components/language-switcher"
+import { EnvBanner } from "@/components/env-banner"
 import { getT } from "@/i18n/server"
 import { DEFAULT_WORDMARK, getBranding } from "@/lib/branding"
 
@@ -18,6 +19,8 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   // already signed in (and still allowed in): skip the form
   if (await getSession()) redirect(typeof next === "string" && next.startsWith("/") && !next.startsWith("//") ? next : "/")
   return (
+    <>
+    <EnvBanner />
     <main className="grid min-h-svh lg:grid-cols-2">
       <LoginArt company={brand.company} logoUrl={brand.logoUrl} />
       <section className="relative flex items-center justify-center p-6">
@@ -42,5 +45,6 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
         </div>
       </section>
     </main>
+    </>
   )
 }
