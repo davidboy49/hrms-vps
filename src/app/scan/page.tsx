@@ -38,9 +38,10 @@ export default async function ScanPage({ searchParams }: { searchParams: Promise
     : [[], "IN" as const]
 
   return (
-    <main className="mx-auto flex min-h-svh max-w-md flex-col gap-5 p-5">
-      <header className="flex items-center justify-between">
-        <div className="flex min-w-0 items-center gap-2">
+    <main className="mx-auto flex min-h-svh w-full max-w-md flex-col gap-5 p-5">
+      {/* on a narrow phone the controls drop under the company name instead of pushing the page wider than the screen */}
+      <header className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+        <div className="flex min-w-0 flex-1 basis-44 items-center gap-2">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={brand.logoUrl} alt="" className="size-9 shrink-0 rounded-xl bg-white object-contain p-0.5 ring-1 ring-border" />
           <span className="min-w-0 leading-tight">
@@ -48,7 +49,7 @@ export default async function ScanPage({ searchParams }: { searchParams: Promise
             <span className="block truncate text-[10px] text-muted-foreground">{t("app.poweredBy", { name: "HR Toch" })}</span>
           </span>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="ml-auto flex shrink-0 items-center gap-1">
           <LanguageSwitcher />
           {can(user, "dashboard.view") && (
             <Button variant="ghost" size="sm" render={<Link href="/" />}>
