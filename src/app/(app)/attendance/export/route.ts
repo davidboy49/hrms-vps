@@ -1,5 +1,5 @@
 import { getSession, can } from "@/lib/session"
-import { buildLogRows, buildLogWorkbook, LOG_HEADERS } from "@/lib/attendance-log"
+import { buildLogRows, buildLogWorkbookBuffer, LOG_HEADERS } from "@/lib/attendance-log"
 import { audit } from "@/lib/audit"
 import { rateLimit } from "@/lib/rate-limit"
 
@@ -24,9 +24,8 @@ export async function GET(req: Request) {
       headers: { "Content-Type": "text/csv; charset=utf-8", "Content-Disposition": 'attachment; filename="Attendance-Logs.csv"' },
     })
   }
-  const wb = await buildLogWorkbook(company, rows)
-  const buf = await wb.xlsx.writeBuffer()
-  return new Response(buf as ArrayBuffer, {
+  const buf = await buildLogWorkbookBuffer(company, rows)
+  return new Response(new Uint8Array(buf), {
     headers: {
       "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       "Content-Disposition": 'attachment; filename="Attendance-Logs.xlsx"',

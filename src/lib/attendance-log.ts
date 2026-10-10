@@ -1,3 +1,4 @@
+import { Writable } from "node:stream"
 import ExcelJS from "exceljs"
 import { db } from "@/lib/db"
 import { localDateKey, localMinutes } from "@/lib/format"
@@ -39,11 +40,17 @@ export async function buildLogRows(sp: SP): Promise<{ rows: LogRow[]; company: s
 
   type Day = { first: Date; last: Date; n: number }
   const byDay = new Map<string, Day>() // employeeId|yyyy-mm-dd
+  const daysOf = new Map<string, Set<string>>() // employeeId -> its dates, built once (a month for 500 staff is ~11k days: never re-scan them per person)
   for (const p of punches) {
-    const k = `${p.employeeId}|${localDateKey(p.punchedAt)}`
+    const dk = localDateKey(p.punchedAt)
+    const k = `${p.employeeId}|${dk}`
     const d = byDay.get(k)
-    if (!d) byDay.set(k, { first: p.punchedAt, last: p.punchedAt, n: 1 })
-    else {
+    if (!d) {
+      byDay.set(k, { first: p.punchedAt, last: p.punchedAt, n: 1 })
+      let s = daysOf.get(p.employeeId!)
+      if (!s) daysOf.set(p.employeeId!, (s = new Set()))
+      s.add(dk)
+    } else {
       d.last = p.punchedAt
       d.n++
     }
@@ -59,7 +66,7 @@ export async function buildLogRows(sp: SP): Promise<{ rows: LogRow[]; company: s
     for (let d = start; d <= end && days.length <= MAX_RANGE_DAYS; d = new Date(d.getTime() + 86400_000)) days.push(d.toISOString().slice(0, 10))
   }
 
-  const empIds = new Set<string>([...byDay.keys()].map((k) => k.split("|")[0]))
+  const empIds = new Set<string>(daysOf.keys())
   const empWhere = wantAbsent
     ? {
         deletedAt: null,
@@ -75,14 +82,19 @@ export async function buildLogRows(sp: SP): Promise<{ rows: LogRow[]; company: s
   })
 
   // each person's plan per day: their weekly template, holidays and one-day roster changes
-  const punchKeys = [...byDay.keys()].map((k) => k.split("|")[1]).sort()
-  const allKeys = [...days, ...punchKeys].sort()
-  const plan = allKeys.length ? await loadPlanner(emps.map((e) => e.id), allKeys[0], allKeys[allKeys.length - 1]) : null
+  let minKey = days[0] ?? null
+  let maxKey = days.length ? days[days.length - 1] : null
+  for (const s of daysOf.values())
+    for (const dk of s) {
+      if (minKey === null || dk < minKey) minKey = dk
+      if (maxKey === null || dk > maxKey) maxKey = dk
+    }
+  const plan = minKey !== null && maxKey !== null ? await loadPlanner(emps.map((e) => e.id), minKey, maxKey) : null
 
   const rows: LogRow[] = []
   let truncated = false
   outer: for (const e of emps) {
-    const keys = new Set<string>([...byDay.keys()].filter((k) => k.startsWith(e.id + "|")).map((k) => k.split("|")[1]))
+    const keys = new Set<string>(daysOf.get(e.id) ?? [])
     if (wantAbsent && plan) {
       const joined = e.joiningDate.toISOString().slice(0, 10)
       // only days the person was meant to work (or was on leave) appear when there is no punch
@@ -154,20 +166,34 @@ export async function buildLogRows(sp: SP): Promise<{ rows: LogRow[]; company: s
 const BORDER_THIN: Partial<ExcelJS.Borders> = { top: { style: "thin" }, left: { style: "thin" }, bottom: { style: "thin" }, right: { style: "thin" } }
 const BORDER_DOUBLE: Partial<ExcelJS.Borders> = { top: { style: "double" }, left: { style: "double" }, bottom: { style: "double" }, right: { style: "double" } }
 
-export async function buildLogWorkbook(company: string, rows: LogRow[]) {
-  const wb = new ExcelJS.Workbook()
-  const ws = wb.addWorksheet("Attendance Logs")
+/**
+ * The .xlsx file as bytes. Rows are written one at a time with ExcelJS's streaming writer and the zip is built as we go, so a month of
+ * 2,000 staff (50,000 rows) peaks near 350 MB instead of building the whole sheet in memory (which went past 600 MB and crashed the app).
+ */
+export async function buildLogWorkbookBuffer(company: string, rows: LogRow[]): Promise<Buffer> {
+  const chunks: Buffer[] = []
+  const sink = new Writable({
+    write(chunk, _enc, cb) {
+      chunks.push(Buffer.from(chunk))
+      cb()
+    },
+  })
+  const wb = new ExcelJS.stream.xlsx.WorkbookWriter({ stream: sink, useStyles: true, useSharedStrings: false })
+  const ws = wb.addWorksheet("Attendance Logs", { views: [{ state: "frozen", ySplit: 5 }] })
   const widths = [6, 12, 10, 24, 12, 16, 20, 22, 22, 11, 11, 11, 13, 34]
   widths.forEach((w, i) => (ws.getColumn(i + 1).width = w))
 
-  ws.mergeCells("A1:N1")
-  ws.getCell("A1").value = company
-  ws.getCell("A1").font = { bold: true, size: 16, name: "Calibri" }
-  ws.getCell("A1").alignment = { horizontal: "center" }
-  ws.mergeCells("A2:N2")
-  ws.getCell("A2").value = "Attendance Logs"
-  ws.getCell("A2").font = { bold: true, size: 14, name: "Calibri" }
-  ws.getCell("A2").alignment = { horizontal: "center" }
+  const title = (r: number, text: string, size: number) => {
+    ws.mergeCells(`A${r}:N${r}`)
+    const c = ws.getCell(`A${r}`)
+    c.value = text
+    c.font = { bold: true, size, name: "Calibri" }
+    c.alignment = { horizontal: "center" }
+    ws.getRow(r).commit()
+  }
+  title(1, company, 16)
+  title(2, "Attendance Logs", 14)
+  ws.getRow(3).commit()
 
   const top: [string, string, string][] = [
     ["A4:A5", "A4", "No"],
@@ -187,24 +213,28 @@ export async function buildLogWorkbook(company: string, rows: LogRow[]) {
   }
   const second: Record<string, string> = { C5: "Code", D5: "Name", H5: "Shift", I5: "Schedule", J5: "Total Hour", K5: "In", L5: "Out" }
   for (const [c, v] of Object.entries(second)) ws.getCell(c).value = v
-  for (let r = 4; r <= 5; r++)
+  for (let r = 4; r <= 5; r++) {
     for (let c = 1; c <= 14; c++) {
       const cell = ws.getCell(r, c)
       cell.font = { bold: true, size: 11, name: "Calibri" }
       cell.alignment = { horizontal: "center", vertical: "middle" }
       cell.border = BORDER_DOUBLE
     }
+    ws.getRow(r).commit()
+  }
 
+  const bodyFont = { size: 11, name: "Calibri" }
   rows.forEach((r, i) => {
     const row = ws.getRow(6 + i)
     r.forEach((v, c) => {
       const cell = row.getCell(c + 1)
       cell.value = v
-      cell.font = { size: 11, name: "Calibri" }
+      cell.font = bodyFont
       cell.border = BORDER_THIN
     })
+    row.commit()
   })
-  ws.views = [{ state: "frozen", ySplit: 5 }]
-  return wb
+  ws.commit()
+  await wb.commit()
+  return Buffer.concat(chunks)
 }
-
