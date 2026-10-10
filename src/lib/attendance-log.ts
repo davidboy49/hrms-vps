@@ -1,3 +1,4 @@
+import { Writable } from "node:stream"
 import ExcelJS from "exceljs"
 import { db } from "@/lib/db"
 import { localDateKey, localMinutes } from "@/lib/format"
@@ -165,20 +166,34 @@ export async function buildLogRows(sp: SP): Promise<{ rows: LogRow[]; company: s
 const BORDER_THIN: Partial<ExcelJS.Borders> = { top: { style: "thin" }, left: { style: "thin" }, bottom: { style: "thin" }, right: { style: "thin" } }
 const BORDER_DOUBLE: Partial<ExcelJS.Borders> = { top: { style: "double" }, left: { style: "double" }, bottom: { style: "double" }, right: { style: "double" } }
 
-export async function buildLogWorkbook(company: string, rows: LogRow[]) {
-  const wb = new ExcelJS.Workbook()
-  const ws = wb.addWorksheet("Attendance Logs")
+/**
+ * The .xlsx file as bytes. Rows are written one at a time with ExcelJS's streaming writer and the zip is built as we go, so a month of
+ * 2,000 staff (50,000 rows) needs a few tens of MB instead of building the whole sheet in memory (which went past 500 MB and crashed the app).
+ */
+export async function buildLogWorkbookBuffer(company: string, rows: LogRow[]): Promise<Buffer> {
+  const chunks: Buffer[] = []
+  const sink = new Writable({
+    write(chunk, _enc, cb) {
+      chunks.push(Buffer.from(chunk))
+      cb()
+    },
+  })
+  const wb = new ExcelJS.stream.xlsx.WorkbookWriter({ stream: sink, useStyles: true, useSharedStrings: false })
+  const ws = wb.addWorksheet("Attendance Logs", { views: [{ state: "frozen", ySplit: 5 }] })
   const widths = [6, 12, 10, 24, 12, 16, 20, 22, 22, 11, 11, 11, 13, 34]
   widths.forEach((w, i) => (ws.getColumn(i + 1).width = w))
 
-  ws.mergeCells("A1:N1")
-  ws.getCell("A1").value = company
-  ws.getCell("A1").font = { bold: true, size: 16, name: "Calibri" }
-  ws.getCell("A1").alignment = { horizontal: "center" }
-  ws.mergeCells("A2:N2")
-  ws.getCell("A2").value = "Attendance Logs"
-  ws.getCell("A2").font = { bold: true, size: 14, name: "Calibri" }
-  ws.getCell("A2").alignment = { horizontal: "center" }
+  const title = (r: number, text: string, size: number) => {
+    ws.mergeCells(`A${r}:N${r}`)
+    const c = ws.getCell(`A${r}`)
+    c.value = text
+    c.font = { bold: true, size, name: "Calibri" }
+    c.alignment = { horizontal: "center" }
+    ws.getRow(r).commit()
+  }
+  title(1, company, 16)
+  title(2, "Attendance Logs", 14)
+  ws.getRow(3).commit()
 
   const top: [string, string, string][] = [
     ["A4:A5", "A4", "No"],
@@ -198,13 +213,15 @@ export async function buildLogWorkbook(company: string, rows: LogRow[]) {
   }
   const second: Record<string, string> = { C5: "Code", D5: "Name", H5: "Shift", I5: "Schedule", J5: "Total Hour", K5: "In", L5: "Out" }
   for (const [c, v] of Object.entries(second)) ws.getCell(c).value = v
-  for (let r = 4; r <= 5; r++)
+  for (let r = 4; r <= 5; r++) {
     for (let c = 1; c <= 14; c++) {
       const cell = ws.getCell(r, c)
       cell.font = { bold: true, size: 11, name: "Calibri" }
       cell.alignment = { horizontal: "center", vertical: "middle" }
       cell.border = BORDER_DOUBLE
     }
+    ws.getRow(r).commit()
+  }
 
   const bodyFont = { size: 11, name: "Calibri" }
   rows.forEach((r, i) => {
@@ -215,8 +232,9 @@ export async function buildLogWorkbook(company: string, rows: LogRow[]) {
       cell.font = bodyFont
       cell.border = BORDER_THIN
     })
+    row.commit()
   })
-  ws.views = [{ state: "frozen", ySplit: 5 }]
-  return wb
+  ws.commit()
+  await wb.commit()
+  return Buffer.concat(chunks)
 }
-
