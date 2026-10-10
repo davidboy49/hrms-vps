@@ -14,10 +14,17 @@ export async function getQrToken(locationId: string) {
   return loc.qrMode === "STATIC" ? makeStaticToken(locationId, loc.qrVersion) : makeToken(locationId)
 }
 
-/** Invalidates every printed code for this location. Print the new one afterwards. */
-export async function regenerateQr(locationId: string) {
-  const user = await assertPerm("qr.manage")
+/**
+ * Invalidates every printed code for this location. Print the new one afterwards.
+ * Needs its own permission (qr.regenerate), and the caller must type the location's name, so it cannot happen by a slip.
+ */
+export async function regenerateQr(locationId: string, confirmName: string): Promise<{ ok?: boolean; error?: string }> {
+  const user = await assertPerm("qr.regenerate")
+  const loc = await db.location.findUnique({ where: { id: locationId }, select: { name: true } })
+  if (!loc) return { error: "Location not found" }
+  if (confirmName.trim().toLowerCase() !== loc.name.trim().toLowerCase()) return { error: "name" }
   await db.location.update({ where: { id: locationId }, data: { qrVersion: { increment: 1 } } })
-  await audit(user.id, "qr-regenerate", "Location", locationId)
+  await audit(user.id, "qr-regenerate", "Location", locationId, loc.name)
   revalidatePath("/attendance/qr")
+  return { ok: true }
 }

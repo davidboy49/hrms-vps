@@ -5,6 +5,8 @@ import QRCode from "qrcode"
 import { toast } from "sonner"
 import { Maximize2, MapPin, Printer, RefreshCw, ShieldCheck, TriangleAlert } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { NativeSelect } from "@/components/native-select"
 import { getQrToken, regenerateQr } from "./actions"
 import { useT } from "@/i18n/provider"
@@ -12,14 +14,17 @@ import { useT } from "@/i18n/provider"
 const REFRESH_MS = 15_000
 const WINDOW_MS = 30_000
 
-type Loc = { id: string; name: string; geofenced: boolean; mode: "STATIC" | "ROTATING" }
+type Loc = { id: string; name: string; geofenced: boolean; mode: "STATIC" | "ROTATING"; lastRegen: string | null }
 
-export function QrKiosk({ locations }: { locations: Loc[] }) {
+export function QrKiosk({ locations, canRegenerate }: { locations: Loc[]; canRegenerate: boolean }) {
   const t = useT()
   const [locId, setLocId] = useState(locations[0]?.id ?? "")
   const [error, setError] = useState<string | null>(null)
   const [left, setLeft] = useState(WINDOW_MS / 1000)
   const [pending, start] = useTransition()
+  const [regenOpen, setRegenOpen] = useState(false)
+  const [typed, setTyped] = useState("")
+  const [regenErr, setRegenErr] = useState<string | null>(null)
   const canvas = useRef<HTMLCanvasElement>(null)
   const stage = useRef<HTMLDivElement>(null)
   const loc = locations.find((l) => l.id === locId)
@@ -100,22 +105,49 @@ export function QrKiosk({ locations }: { locations: Loc[] }) {
           <Button render={<a href={`/print/qr/${locId}`} target="_blank" rel="noopener" />}>
             <Printer /> {t("qr.static.print")}
           </Button>
-          <Button
-            variant="outline"
-            disabled={pending}
-            onClick={() => {
-              if (!window.confirm(t("qr.static.regenConfirm"))) return
+          {canRegenerate && (
+            <Button variant="outline" disabled={pending} onClick={() => { setTyped(""); setRegenErr(null); setRegenOpen(true) }}>
+              <RefreshCw /> {t("qr.static.regen")}
+            </Button>
+          )}
+        </div>
+      )}
+
+      {isStatic && (
+        <p className="text-xs text-muted-foreground">{loc?.lastRegen ? t("qr.regen.last", { v: loc.lastRegen }) : t("qr.regen.never")}</p>
+      )}
+
+      <Dialog open={regenOpen} onOpenChange={setRegenOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("qr.static.regen")}</DialogTitle>
+            <DialogDescription>{t("qr.regen.warn", { name: loc?.name ?? "" })}</DialogDescription>
+          </DialogHeader>
+          <form
+            className="space-y-3"
+            onSubmit={(e) => {
+              e.preventDefault()
               start(async () => {
-                await regenerateQr(locId)
+                const r = await regenerateQr(locId, typed)
+                if (r.error) {
+                  setRegenErr(r.error === "name" ? t("qr.regen.mismatch") : r.error)
+                  return
+                }
+                setRegenOpen(false)
                 await refresh()
                 toast.success(t("qr.static.regenDone"))
               })
             }}
           >
-            <RefreshCw /> {t("qr.static.regen")}
-          </Button>
-        </div>
-      )}
+            <Input value={typed} onChange={(e) => setTyped(e.target.value)} placeholder={loc?.name} aria-label={t("qr.regen.type")} autoComplete="off" />
+            {regenErr && <p role="alert" className="text-sm text-destructive">{regenErr}</p>}
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setRegenOpen(false)}>{t("common.cancel")}</Button>
+              <Button type="submit" variant="destructive" disabled={pending || typed.trim().toLowerCase() !== (loc?.name ?? "").trim().toLowerCase()}>{t("qr.static.regen")}</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       <ul className="space-y-1.5 text-xs text-muted-foreground">
         <li className="flex items-center gap-2">

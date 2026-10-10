@@ -22,6 +22,8 @@ jobs:
       - run: npx next typegen
       - run: npx tsc --noEmit
       - run: npm run lint
+      # every server action, route and page must check who is calling (see scripts/check-guards.mjs)
+      - run: npm run check:guards
 
   deploy:
     needs: check
