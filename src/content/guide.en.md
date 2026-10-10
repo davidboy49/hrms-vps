@@ -169,6 +169,13 @@ Choose a **month** and press **Show**. For each employee you see the facts payro
 
 Check absences and days with no clock-out before paying. The current month counts up to yesterday. Amounts and deductions are not calculated here.
 
+**Setup** (permission *Set up pay policy, allowance and deduction types*): press **Payroll setup** on the Payroll page.
+- **Pay policy:** how a daily rate is worked out (monthly rate ÷ a fixed number of days, or ÷ the person's working days that month), working hours per day, and whether late minutes are deducted.
+- **Allowance and deduction types:** create types such as Transport allowance or Advance repayment, fixed or a percent of base pay, and say whether an allowance is taxable and counts toward NSSF. *Add suggested types* gives a starting list.
+- **Per person:** open the employee profile, **Allowances and deductions → Add**, choose the type, the amount (or leave it to use the default) and the dates. *End today* stops it and keeps the history.
+
+These settings are stored for the pay run; they do not change anyone's pay yet.
+
 ## 6. Troubleshooting
 
 | Problem | What to try |

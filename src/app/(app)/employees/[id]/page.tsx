@@ -11,6 +11,10 @@ import { Button } from "@/components/ui/button"
 import { PersonAvatar } from "@/components/avatar"
 import { StatusBadge } from "@/components/status-badge"
 import { StatusButton } from "../status-dialog"
+import { payrollEdition } from "@/lib/edition"
+import { PayItems } from "./pay-items"
+import { payrollEdition } from "@/lib/edition"
+import { PayItems } from "./pay-items"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 
 export const dynamic = "force-dynamic"
@@ -52,6 +56,24 @@ export default async function EmployeePage({ params }: { params: Promise<{ id: s
     canEdit ? db.employmentEvent.findMany({ where: { employeeId: id }, orderBy: { createdAt: "desc" } }) : Promise.resolve([]),
     canToggle ? lookups() : Promise.resolve(null),
   ])
+  // Payroll edition: this person's allowances and deductions (needs a payroll permission)
+  const showPay = payrollEdition() && (can(user, "payroll.view") || can(user, "payroll.manage"))
+  const payToday = localDateKey(new Date())
+  const [payItems, payOptions] = showPay
+    ? await Promise.all([
+        db.employeeComponent.findMany({ where: { employeeId: id }, orderBy: [{ validFrom: "desc" }], include: { component: true } }),
+        db.payComponent.findMany({ where: { isActive: true }, orderBy: [{ kind: "asc" }, { code: "asc" }] }),
+      ])
+    : [[], []]
+  // Payroll edition: this person's allowances and deductions (needs a payroll permission)
+  const showPay = payrollEdition() && (can(user, "payroll.view") || can(user, "payroll.manage"))
+  const payToday = localDateKey(new Date())
+  const [payItems, payOptions] = showPay
+    ? await Promise.all([
+        db.employeeComponent.findMany({ where: { employeeId: id }, orderBy: [{ validFrom: "desc" }], include: { component: true } }),
+        db.payComponent.findMany({ where: { isActive: true }, orderBy: [{ kind: "asc" }, { code: "asc" }] }),
+      ])
+    : [[], []]
   const toggleStatuses = (lk?.statuses ?? []).filter((x) => x.countsAsActive === inactive).map((x) => ({ value: x.id, label: labelFor(t, "status", x.code, x.name) }))
   // eslint-disable-next-line react-hooks/purity
   const expiring = e.contractEnd && e.contractEnd.getTime() - Date.now() < 60 * 864e5
@@ -219,6 +241,25 @@ export default async function EmployeePage({ params }: { params: Promise<{ id: s
             </Table>
           </div>
         </section>
+      )}
+
+      {showPay && (
+        <PayItems
+          employeeId={id}
+          currency={e.currency}
+          today={payToday}
+          canManage={can(user, "payroll.manage")}
+          items={payItems.map((i) => {
+            const from = i.validFrom.toISOString().slice(0, 10)
+            const to = i.validTo ? i.validTo.toISOString().slice(0, 10) : null
+            const amt = i.amount ?? i.component.defaultAmount
+            return {
+              id: i.id, name: i.component.name, kind: i.component.kind, calc: i.component.calc, amount: amt === null ? null : Number(amt), from, to, note: i.note ?? "",
+              current: from <= payToday && (!to || to >= payToday),
+            }
+          })}
+          options={payOptions.map((c) => ({ id: c.id, label: c.name, kind: c.kind, calc: c.calc, defaultAmount: c.defaultAmount === null ? null : Number(c.defaultAmount) }))}
+        />
       )}
 
       <section className="space-y-2">

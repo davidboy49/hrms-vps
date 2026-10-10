@@ -239,6 +239,7 @@ model Employee {
   updatedAt          DateTime           @updatedAt
   employmentEvents   EmploymentEvent[]
   rateHistory        RateHistory[]
+  payItems           EmployeeComponent[]
   transfers          BranchTransfer[]
   user               User?
   punches            AttendancePunch[]
@@ -538,4 +539,55 @@ model OvertimeRequest {
   @@index([employeeId])
   @@index([status])
   @@index([date])
+}
+
+// ---- Payroll edition: allowance and deduction types, and who gets them (phase 2A). Tables exist in every edition; only the Payroll edition uses them.
+
+enum PayComponentKind {
+  ALLOWANCE
+  DEDUCTION
+}
+
+enum PayComponentCalc {
+  FIXED
+  PERCENT_OF_BASE
+}
+
+/// A type of allowance (adds to pay) or deduction (takes from pay), for example Transport or Advance repayment.
+model PayComponent {
+  id            String              @id @default(cuid())
+  code          String              @unique
+  name          String
+  nameKm        String?
+  kind          PayComponentKind
+  calc          PayComponentCalc    @default(FIXED)
+  /// the amount (FIXED) or the percent of base pay (PERCENT_OF_BASE) used when a person's assignment has none of its own
+  defaultAmount Decimal?            @db.Decimal(12, 2)
+  /// ALLOWANCE: counts as taxable income
+  taxable       Boolean             @default(true)
+  /// counts toward the NSSF base
+  nssfBase      Boolean             @default(false)
+  isActive      Boolean             @default(true)
+  createdAt     DateTime            @default(now())
+  assignments   EmployeeComponent[]
+}
+
+/// One person getting one component for a period. The amount is in the person's own pay currency.
+model EmployeeComponent {
+  id          String       @id @default(cuid())
+  employeeId  String
+  employee    Employee     @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+  componentId String
+  component   PayComponent @relation(fields: [componentId], references: [id], onDelete: Restrict)
+  /// null = use the component's default
+  amount      Decimal?     @db.Decimal(12, 2)
+  validFrom   DateTime     @db.Date
+  /// null = until ended
+  validTo     DateTime?    @db.Date
+  note        String?
+  createdBy   String?
+  createdAt   DateTime     @default(now())
+
+  @@index([employeeId])
+  @@index([componentId])
 }

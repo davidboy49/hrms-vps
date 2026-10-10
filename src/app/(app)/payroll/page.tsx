@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation"
 import Link from "next/link"
-import { Download } from "lucide-react"
+import { Download, Settings2 } from "lucide-react"
 import { requirePerm, can } from "@/lib/session"
 import { payrollEdition } from "@/lib/edition"
 import { buildPayrollInput, isMonthKey } from "@/lib/payroll-input"
@@ -42,11 +42,18 @@ export default async function PayrollPage({ searchParams }: { searchParams: Prom
           </label>
           <Button type="submit" variant="outline">{t("pay.show")}</Button>
         </form>
-        {can(user, "payroll.export") && (
-          <Button render={<Link href={`/payroll/export?m=${month}`} />}>
-            <Download /> {t("pay.export")}
-          </Button>
-        )}
+        <div className="flex gap-2">
+          {can(user, "payroll.manage") && (
+            <Button variant="outline" render={<Link href="/payroll/setup" />}>
+              <Settings2 /> {t("pay.setup")}
+            </Button>
+          )}
+          {can(user, "payroll.export") && (
+            <Button render={<Link href={`/payroll/export?m=${month}`} />}>
+              <Download /> {t("pay.export")}
+            </Button>
+          )}
+        </div>
       </div>
       <p className="mb-3 text-xs text-muted-foreground">{t("pay.through", { from: data.from, through: data.through < data.from ? "–" : data.through })}</p>
       <div className="rounded-lg border">
