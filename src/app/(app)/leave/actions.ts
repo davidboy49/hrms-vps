@@ -49,7 +49,9 @@ async function check(u: SessionUser & { employeeId: string | null }, input: z.in
   const t = await getT()
   const p = requestShape.safeParse(input)
   if (!p.success) return { error: t("lv.err.invalid") }
-  const employeeId = can(u, "leave.manage") && p.data.employeeId ? p.data.employeeId : u.employeeId
+  const forOther = can(u, "leave.manage") && Boolean(p.data.employeeId) && p.data.employeeId !== u.employeeId
+  if (!forOther && !can(u, "leave.request")) return { error: t("lv.err.noRequestPerm") }
+  const employeeId = forOther ? p.data.employeeId! : u.employeeId
   if (!employeeId) return { error: t("lv.err.noEmployee") }
   const { from, to } = p.data
   if (to < from) return { error: t("sch.err.range") }

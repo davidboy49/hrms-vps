@@ -66,14 +66,20 @@ export default async function ScanPage({ searchParams }: { searchParams: Promise
       <ActiveAnnouncements limit={2} />
 
       {/* staff have no sidebar here, so this is how they reach their own leave and overtime requests */}
-      <nav className="grid grid-cols-2 gap-2" aria-label={t("scan.more")}>
-        <Button variant="outline" render={<Link href="/leave" />}>
-          <CalendarOff /> {t("nav.leave")}
-        </Button>
-        <Button variant="outline" render={<Link href="/overtime" />}>
-          <Timer /> {t("nav.overtime")}
-        </Button>
-      </nav>
+      {(can(user, "leave.request") || can(user, "overtime.request")) && (
+        <nav className="flex gap-2" aria-label={t("scan.more")}>
+          {can(user, "leave.request") && (
+            <Button variant="outline" className="flex-1" render={<Link href="/leave" />}>
+              <CalendarOff /> {t("nav.leave")}
+            </Button>
+          )}
+          {can(user, "overtime.request") && (
+            <Button variant="outline" className="flex-1" render={<Link href="/overtime" />}>
+              <Timer /> {t("nav.overtime")}
+            </Button>
+          )}
+        </nav>
+      )}
 
       <section>
         <p className="text-sm text-muted-foreground">{t("scan.signedInAs")}</p>

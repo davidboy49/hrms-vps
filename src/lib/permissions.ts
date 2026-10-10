@@ -8,7 +8,7 @@ export const PERMISSION_GROUPS = [
   { group: "employees", perms: ["employees.view", "employees.edit", "employees.import", "employees.export", "employees.deactivate", "employees.reactivate"] },
   { group: "attendance", perms: ["attendance.view", "attendance.manage", "attendance.export", "attendance.devices"] },
   { group: "roster", perms: ["roster.view", "roster.edit", "qr.manage"] },
-  { group: "leave", perms: ["leave.viewAll", "leave.manage", "overtime.viewAll", "overtime.manage"] },
+  { group: "leave", perms: ["leave.request", "overtime.request", "leave.viewAll", "leave.manage", "overtime.viewAll", "overtime.manage"] },
   { group: "announcements", perms: ["announcements.manage"] },
   { group: "masterdata", perms: ["masterdata.view", "masterdata.edit", "masterdata.delete"] },
   { group: "settings", perms: ["settings.view", "settings.manage", "settings.notifications", "users.manage", "users.createBatch", "roles.manage", "audit.view"] },
@@ -19,7 +19,7 @@ export const ALL_PERMISSIONS: Permission[] = PERMISSION_GROUPS.flatMap((g) => [.
 const VALID = new Set<string>(ALL_PERMISSIONS)
 export const isPermission = (p: string): p is Permission => VALID.has(p)
 
-const MANAGER: Permission[] = ["dashboard.view", "alerts.view", "employees.view", "attendance.view", "roster.view", "leave.viewAll", "overtime.viewAll"]
+const MANAGER: Permission[] = ["dashboard.view", "alerts.view", "employees.view", "attendance.view", "roster.view", "leave.request", "overtime.request", "leave.viewAll", "overtime.viewAll"]
 const HR: Permission[] = [
   ...MANAGER,
   "employees.edit", "employees.import", "employees.export", "employees.deactivate", "attendance.manage", "attendance.export", "roster.edit", "qr.manage",
@@ -31,7 +31,7 @@ export const BUILT_IN_ROLES: { key: string; name: string; description: string; p
   { key: "ADMIN", name: "Admin", description: "Full access", perms: ALL_PERMISSIONS },
   { key: "HR", name: "HR", description: "Manages employees, attendance, leave and settings", perms: HR },
   { key: "MANAGER", name: "Manager", description: "Views employees, attendance, leave and overtime", perms: MANAGER },
-  { key: "EMPLOYEE", name: "Employee", description: "Own attendance, leave and overtime only", perms: [] },
+  { key: "EMPLOYEE", name: "Employee", description: "Own attendance, leave and overtime only", perms: ["leave.request", "overtime.request"] },
 ]
 
 export function can(user: { perms: readonly string[] }, perm: Permission) {

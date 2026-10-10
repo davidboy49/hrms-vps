@@ -48,7 +48,7 @@ Tips:
 4. Your balance cards at the top show days left per leave type. If you joined this year, your allowance is a share of the full year (the card says *pro-rated*). Some leave, such as Annual leave, cannot be taken until a few months after you join; the card then shows *Available from* a date. The status shows **Pending**, **Approved**, **Rejected** or **Cancelled**.
 5. You can cancel a request while it is still pending.
 
-If it says your sign-in is not linked to an employee record, ask HR to link it.
+If it says your sign-in is not linked to an employee record, ask HR to link it. If there is no **Request leave** button, your role does not have the permission *Request own leave*: an Admin can give it in **Settings → Roles** (the same for overtime: *Request own overtime*).
 
 ### 3.3 Request overtime
 1. Open **Overtime** and press **Request overtime**.
