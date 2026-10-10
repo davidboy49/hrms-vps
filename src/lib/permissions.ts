@@ -10,7 +10,7 @@ export const PERMISSION_GROUPS = [
   { group: "roster", perms: ["roster.view", "roster.edit", "qr.manage"] },
   { group: "leave", perms: ["leave.request", "overtime.request", "leave.viewAll", "leave.manage", "overtime.viewAll", "overtime.manage"] },
   { group: "help", perms: ["guide.view"] },
-  { group: "payroll", perms: ["payroll.view", "payroll.export"] },
+  { group: "payroll", perms: ["payroll.view", "payroll.export", "payroll.manage"] },
   { group: "announcements", perms: ["announcements.manage"] },
   { group: "masterdata", perms: ["masterdata.view", "masterdata.edit", "masterdata.delete"] },
   { group: "settings", perms: ["settings.view", "settings.manage", "settings.notifications", "users.manage", "users.createBatch", "roles.manage", "audit.view"] },
@@ -37,7 +37,7 @@ export const BUILT_IN_ROLES: { key: string; name: string; description: string; p
 ]
 
 /** Permissions that only exist in the Payroll edition. In the standard edition nobody has them, not even the Admin. */
-export const PAYROLL_PERMISSIONS: readonly string[] = ["payroll.view", "payroll.export"]
+export const PAYROLL_PERMISSIONS: readonly string[] = ["payroll.view", "payroll.export", "payroll.manage"]
 
 export function can(user: { perms: readonly string[] }, perm: Permission) {
   return user.perms.includes(perm)
