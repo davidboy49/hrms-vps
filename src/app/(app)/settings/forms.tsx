@@ -14,7 +14,7 @@ import { Switch } from "@/components/ui/switch"
 import { useT } from "@/i18n/provider"
 import { suggestUsername } from "@/lib/username"
 
-export function SettingsForm({ values, fields, disabled }: { values: Record<string, string>; fields: { key: string; label: string; hint?: string; type?: string }[]; disabled: boolean }) {
+export function SettingsForm({ values, fields, disabled }: { values: Record<string, string>; fields: { key: string; label: string; hint?: string; type?: string; options?: { value: string; label: string }[]; def?: string }[]; disabled: boolean }) {
   const t = useT()
   const [pending, start] = useTransition()
   const [err, setErr] = useState<string | null>(null)
@@ -39,6 +39,12 @@ export function SettingsForm({ values, fields, disabled }: { values: Record<stri
             <NativeSelect id={f.key} name={f.key} defaultValue={values[f.key] ?? "USD"} disabled={disabled}>
               <option value="USD">USD</option>
               <option value="KHR">KHR</option>
+            </NativeSelect>
+          ) : f.type === "select" ? (
+            <NativeSelect id={f.key} name={f.key} defaultValue={values[f.key] ?? f.def ?? f.options?.[0]?.value} disabled={disabled}>
+              {f.options?.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
             </NativeSelect>
           ) : f.type === "khmerOnly" ? (
             <NativeSelect id={f.key} name={f.key} defaultValue={values[f.key] === "1" ? "1" : "0"} disabled={disabled}>

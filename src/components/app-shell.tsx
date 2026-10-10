@@ -38,6 +38,7 @@ const NAV: NavEntry[] = [
       { href: "/attendance/roster", label: "att.tab.roster", perm: "roster.view" },
       { href: "/attendance/templates", label: "att.tab.templates", perm: "roster.edit" },
       { href: "/attendance?tab=devices", label: "att.tab.devices", perm: "attendance.view", tab: "devices" },
+      { href: "/attendance?tab=suspicious", label: "att.tab.suspicious", perm: "attendance.review", tab: "suspicious" },
       { href: "/attendance/qr", label: "att.qr", perm: "qr.manage" },
     ],
   },

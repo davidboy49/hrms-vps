@@ -90,6 +90,14 @@ Open **Attendance → QR**.
 - **Daily**: one row per person per day with first in, last out, late minutes and status.
 - **Devices**: ZKTeco devices and the QR source.
 
+### 4.4a Suspicious-punch checks (optional)
+
+An Admin can switch these on in **Settings → Attendance → Suspicious-punch checks** and choose a sensitivity. A **Suspicious** tab then appears in **Attendance** for roles with the permission *See the suspicious-punch checks*.
+
+It lists staff whose check-ins need a second look, and why: the **same exact position** again and again (real GPS moves a little every time), the **same position as other staff**, check-ins **exactly on the site's centre point**, positions that **change faster than a person can travel**, or an identical GPS accuracy every time. **Likely** means several signs together, **Check** means one clear sign, **Hint** is only a weak sign.
+
+These are hints, not proof. Ask the person first. Nothing is blocked or deducted automatically, and old check-ins are covered too.
+
 ### 4.5 Schedules and days off
 - **Attendance → Schedule templates**: build a weekly pattern (for example Mon–Sat work, Sunday off) and assign it to people.
 - **Attendance → Roster**: a monthly grid. Click a day to change one person's day (day off, leave, a different shift), or use **weekly days off** for a person's usual days off.

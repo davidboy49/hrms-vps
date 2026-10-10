@@ -91,6 +91,8 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
             { key: "attendance.lateGraceMin", label: t("set.lateGrace"), type: "number", hint: t("set.lateGraceHint") },
             { key: "log.lateAfterMin", label: t("set.logLate"), type: "number", hint: t("set.logLateHint") },
             { key: "log.earlyBeforeMin", label: t("set.logEarly"), type: "number", hint: t("set.logEarlyHint") },
+            { key: "attendance.suspicious", label: t("set.susOn"), type: "select", def: "0", hint: t("set.susOnHint"), options: [{ value: "0", label: t("set.off") }, { value: "1", label: t("set.on") }] },
+            { key: "attendance.suspiciousLevel", label: t("set.susLevel"), type: "select", def: "medium", hint: t("set.susLevelHint"), options: [{ value: "low", label: t("sus.lvl.low") }, { value: "medium", label: t("sus.lvl.medium") }, { value: "high", label: t("sus.lvl.high") }] },
           ]}
         />
       )}

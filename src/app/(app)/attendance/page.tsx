@@ -13,6 +13,8 @@ import { getT, titleOf } from "@/i18n/server"
 import type { TFn } from "@/i18n/core"
 import { Pager } from "@/components/pager"
 import { buildPunchWhere, parsePunchFilters } from "@/lib/punches"
+import { findSuspicious, parseRange, MAX_RANGE_DAYS, type Level } from "@/lib/suspicious"
+import { Input } from "@/components/ui/input"
 
 export const generateMetadata = titleOf("nav.attendance")
 export const dynamic = "force-dynamic"
@@ -38,7 +40,7 @@ export default async function AttendancePage({ searchParams }: { searchParams: P
   const t = await getT()
   const user = await requirePerm("attendance.view")
   const sp = await searchParams
-  const tab = sp.tab === "daily" || sp.tab === "devices" ? sp.tab : "punches"
+  const tab = sp.tab === "daily" || sp.tab === "devices" || (sp.tab === "suspicious" && can(user, "attendance.review")) ? sp.tab : "punches"
   const canEdit = can(user, "attendance.manage")
   const isAdmin = can(user, "attendance.devices")
   const today = localDateKey(new Date())
@@ -63,6 +65,7 @@ export default async function AttendancePage({ searchParams }: { searchParams: P
 
       {tab === "devices" && <Devices canEdit={canEdit} isAdmin={isAdmin} today={today} />}
       {tab === "punches" && <Punches sp={sp} canExport={canEdit} />}
+      {tab === "suspicious" && <Suspicious sp={sp} today={today} />}
       {tab === "daily" && <Daily date={typeof sp.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(sp.date) ? sp.date : today} />}
     </>
   )
@@ -305,6 +308,67 @@ async function Daily({ date }: { date: string }) {
                 <TableCell className="tabular-nums">{fmtTime(r.lastOut)}</TableCell>
                 <TableCell className="text-right tabular-nums">{r.workedMin ? t("time.hm", { h: Math.floor(r.workedMin / 60), m: r.workedMin % 60 }) : "—"}</TableCell>
                 <TableCell>{r.state === "PRESENT" ? pill("ok", t("daily.PRESENT")) : r.state === "LATE" ? pill("warn", t("att.lateBy", { m: r.lateMin })) : r.state === "INCOMPLETE" ? pill("bad", t("daily.INCOMPLETE")) : pill("mute", t("daily.ABSENT"))}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
+  )
+}
+
+const susTone = { likely: "bad", check: "warn", hint: "mute" } as const
+
+async function Suspicious({ sp, today }: { sp: SP; today: string }) {
+  const t = await getT()
+  const rows = await db.setting.findMany({ where: { key: { in: ["attendance.suspicious", "attendance.suspiciousLevel"] } } })
+  const on = rows.find((r) => r.key === "attendance.suspicious")?.value === "1"
+  if (!on) return <p className="rounded-lg border p-4 text-sm text-muted-foreground">{t("sus.off")}</p>
+  const lv = rows.find((r) => r.key === "attendance.suspiciousLevel")?.value
+  const level: Level = lv === "low" || lv === "high" ? lv : "medium"
+  const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v)
+  const { from, to } = parseRange(one(sp.from), one(sp.to), today)
+  const findings = await findSuspicious(from, to, level)
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-muted-foreground">{t("sus.intro", { level: t(`sus.lvl.${level}`), max: MAX_RANGE_DAYS })}</p>
+      <form method="get" className="flex flex-wrap items-end gap-2">
+        <input type="hidden" name="tab" value="suspicious" />
+        <label className="space-y-1.5 text-sm"><span className="block text-muted-foreground">{t("sus.from")}</span><Input type="date" name="from" defaultValue={from} className="w-44" /></label>
+        <label className="space-y-1.5 text-sm"><span className="block text-muted-foreground">{t("sus.to")}</span><Input type="date" name="to" defaultValue={to} className="w-44" /></label>
+        <Button type="submit" variant="outline">{t("pay.show")}</Button>
+      </form>
+      <div className="rounded-lg border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>{t("sus.col.employee")}</TableHead>
+              <TableHead>{t("sus.col.level")}</TableHead>
+              <TableHead>{t("sus.col.why")}</TableHead>
+              <TableHead className="text-right">{t("sus.col.punches")}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {findings.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">{t("sus.none")}</TableCell>
+              </TableRow>
+            )}
+            {findings.map((f) => (
+              <TableRow key={f.employeeId}>
+                <TableCell>
+                  <Link href={`/employees/${f.employeeId}`} className="font-medium hover:underline">{f.name}</Link>
+                  <span className="block text-xs text-muted-foreground">{f.employeeNo} · {f.department}</span>
+                </TableCell>
+                <TableCell>{pill(susTone[f.severity], t(`sus.level.${f.severity}`))}</TableCell>
+                <TableCell>
+                  <ul className="space-y-1 text-sm">
+                    {f.rules.map((r) => (
+                      <li key={r.key}>{t(`sus.rule.${r.key}`, r.vars)}</li>
+                    ))}
+                  </ul>
+                </TableCell>
+                <TableCell className="text-right tabular-nums">{f.punches}</TableCell>
               </TableRow>
             ))}
           </TableBody>
