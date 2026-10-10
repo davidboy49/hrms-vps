@@ -13,8 +13,6 @@ import { StatusBadge } from "@/components/status-badge"
 import { StatusButton } from "../status-dialog"
 import { payrollEdition } from "@/lib/edition"
 import { PayItems } from "./pay-items"
-import { payrollEdition } from "@/lib/edition"
-import { PayItems } from "./pay-items"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 
 export const dynamic = "force-dynamic"
@@ -56,15 +54,6 @@ export default async function EmployeePage({ params }: { params: Promise<{ id: s
     canEdit ? db.employmentEvent.findMany({ where: { employeeId: id }, orderBy: { createdAt: "desc" } }) : Promise.resolve([]),
     canToggle ? lookups() : Promise.resolve(null),
   ])
-  // Payroll edition: this person's allowances and deductions (needs a payroll permission)
-  const showPay = payrollEdition() && (can(user, "payroll.view") || can(user, "payroll.manage"))
-  const payToday = localDateKey(new Date())
-  const [payItems, payOptions] = showPay
-    ? await Promise.all([
-        db.employeeComponent.findMany({ where: { employeeId: id }, orderBy: [{ validFrom: "desc" }], include: { component: true } }),
-        db.payComponent.findMany({ where: { isActive: true }, orderBy: [{ kind: "asc" }, { code: "asc" }] }),
-      ])
-    : [[], []]
   // Payroll edition: this person's allowances and deductions (needs a payroll permission)
   const showPay = payrollEdition() && (can(user, "payroll.view") || can(user, "payroll.manage"))
   const payToday = localDateKey(new Date())
