@@ -168,7 +168,7 @@ const BORDER_DOUBLE: Partial<ExcelJS.Borders> = { top: { style: "double" }, left
 
 /**
  * The .xlsx file as bytes. Rows are written one at a time with ExcelJS's streaming writer and the zip is built as we go, so a month of
- * 2,000 staff (50,000 rows) needs a few tens of MB instead of building the whole sheet in memory (which went past 500 MB and crashed the app).
+ * 2,000 staff (50,000 rows) peaks near 350 MB instead of building the whole sheet in memory (which went past 600 MB and crashed the app).
  */
 export async function buildLogWorkbookBuffer(company: string, rows: LogRow[]): Promise<Buffer> {
   const chunks: Buffer[] = []
