@@ -42,7 +42,7 @@ Tips:
 - Your last scans are listed under the scan button.
 
 ### 3.2 Request leave
-1. Open **Leave** in the menu and press **Request leave**.
+1. On the check-in page press **Leave** (HR and managers: **Leave** in the menu), then press **Request leave**.
 2. Choose the leave type, the dates and a reason. For **half a day**, choose *Morning only* or *Afternoon only* under the dates (for a longer leave you can do this for the first and the last day). A line under the form shows how many days the request uses and what your balance will be afterwards.
 3. Send the request. Only your working days are counted; days off and public holidays are not. A half day counts 0.5.
 4. Your balance cards at the top show days left per leave type. If you joined this year, your allowance is a share of the full year (the card says *pro-rated*). Some leave, such as Annual leave, cannot be taken until a few months after you join; the card then shows *Available from* a date. The status shows **Pending**, **Approved**, **Rejected** or **Cancelled**.

@@ -100,7 +100,8 @@ export function RolesPanel({ roles }: { roles: RoleRow[] }) {
                     {r.name}
                     {r.isSystem && <Lock className="size-3 text-muted-foreground" aria-label={t("roles.builtIn")} />}
                   </span>
-                  {r.description && <span className="text-xs text-muted-foreground">{r.description}</span>}
+                  {r.description && <span className="block text-xs text-muted-foreground">{r.description}</span>}
+                  {r.permissions.length === 0 && <span className="block text-xs text-muted-foreground">{t("roles.selfService")}</span>}
                 </TableCell>
                 <TableCell className="hidden text-muted-foreground md:table-cell">
                   {r.permissions.length} / {ALL_PERMISSIONS.length}

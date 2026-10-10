@@ -372,6 +372,7 @@ export const en: Dict = {
 
   // ---- phone scan page
   "scan.title": "Check in or out",
+  "scan.more": "Staff tools",
   "scan.signedInAs": "Signed in as",
   "scan.notLinked": "Your login is not linked to an employee record yet, so punches cannot be saved. Ask HR to link your account in Settings → Users and roles.",
   "scan.howTo": "Scan the QR code on the office screen with your phone camera to check in or out.",
@@ -555,6 +556,7 @@ export const en: Dict = {
   "roles.intro": "A role is a named set of permissions. Create roles for your team, tick what each can do, then assign them to users. Changes apply on the person's next click, with no sign-out needed.",
   "roles.add": "New role",
   "roles.permissions": "Permissions",
+  "roles.selfService": "A role with no permissions is still fine for staff: everyone can check in and request their own leave and overtime. Permissions only add access to other people's data and settings.",
   "roles.users": "Users",
   "roles.builtIn": "Built-in role",
   "roles.view": "View",
