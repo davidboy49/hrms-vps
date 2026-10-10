@@ -23,6 +23,8 @@ export type Filters = {
   joinTo: string
   rateMin: string
   rateMax: string
+  /** "with" = already has a login, "without" = no login yet */
+  login: "" | "with" | "without"
 }
 
 export function parseFilters(sp: SP): Filters {
@@ -37,6 +39,7 @@ export function parseFilters(sp: SP): Filters {
     joinTo: one(sp.joinTo),
     rateMin: one(sp.rateMin),
     rateMax: one(sp.rateMax),
+    login: one(sp.login) === "with" ? "with" : one(sp.login) === "without" ? "without" : "",
   }
 }
 
@@ -57,6 +60,8 @@ export function buildWhere(f: Filters, ids?: string[]): Prisma.EmployeeWhereInpu
   if (f.desig.length) and.push({ designationId: { in: f.desig } })
   if (f.contract.length) and.push({ contractTypeId: { in: f.contract } })
   if (f.status.length) and.push({ statusId: { in: f.status } })
+  if (f.login === "with") and.push({ user: { isNot: null } })
+  if (f.login === "without") and.push({ user: { is: null } })
   const from = toDate(f.joinFrom)
   const to = toDate(f.joinTo)
   if (from || to) and.push({ joiningDate: { ...(from ? { gte: from } : {}), ...(to ? { lte: to } : {}) } })
