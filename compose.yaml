@@ -66,7 +66,7 @@ services:
       db: { condition: service_healthy }
       rustfs-init: { condition: service_completed_successfully }
     environment:
-      DATABASE_URL: postgresql://peopledesk:${POSTGRES_PASSWORD}@db:5432/peopledesk?schema=public
+      DATABASE_URL: postgresql://peopledesk:${POSTGRES_PASSWORD}@db:5432/peopledesk?schema=public&connection_limit=15&pool_timeout=30
       DATABASE_URL_UNPOOLED: postgresql://peopledesk:${POSTGRES_PASSWORD}@db:5432/peopledesk?schema=public
       AUTH_SECRET: ${AUTH_SECRET:?set AUTH_SECRET in .env}
       CRON_SECRET: ${CRON_SECRET:?set CRON_SECRET in .env}

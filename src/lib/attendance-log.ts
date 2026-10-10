@@ -39,11 +39,17 @@ export async function buildLogRows(sp: SP): Promise<{ rows: LogRow[]; company: s
 
   type Day = { first: Date; last: Date; n: number }
   const byDay = new Map<string, Day>() // employeeId|yyyy-mm-dd
+  const daysOf = new Map<string, Set<string>>() // employeeId -> its dates, built once (a month for 500 staff is ~11k days: never re-scan them per person)
   for (const p of punches) {
-    const k = `${p.employeeId}|${localDateKey(p.punchedAt)}`
+    const dk = localDateKey(p.punchedAt)
+    const k = `${p.employeeId}|${dk}`
     const d = byDay.get(k)
-    if (!d) byDay.set(k, { first: p.punchedAt, last: p.punchedAt, n: 1 })
-    else {
+    if (!d) {
+      byDay.set(k, { first: p.punchedAt, last: p.punchedAt, n: 1 })
+      let s = daysOf.get(p.employeeId!)
+      if (!s) daysOf.set(p.employeeId!, (s = new Set()))
+      s.add(dk)
+    } else {
       d.last = p.punchedAt
       d.n++
     }
@@ -59,7 +65,7 @@ export async function buildLogRows(sp: SP): Promise<{ rows: LogRow[]; company: s
     for (let d = start; d <= end && days.length <= MAX_RANGE_DAYS; d = new Date(d.getTime() + 86400_000)) days.push(d.toISOString().slice(0, 10))
   }
 
-  const empIds = new Set<string>([...byDay.keys()].map((k) => k.split("|")[0]))
+  const empIds = new Set<string>(daysOf.keys())
   const empWhere = wantAbsent
     ? {
         deletedAt: null,
@@ -75,14 +81,19 @@ export async function buildLogRows(sp: SP): Promise<{ rows: LogRow[]; company: s
   })
 
   // each person's plan per day: their weekly template, holidays and one-day roster changes
-  const punchKeys = [...byDay.keys()].map((k) => k.split("|")[1]).sort()
-  const allKeys = [...days, ...punchKeys].sort()
-  const plan = allKeys.length ? await loadPlanner(emps.map((e) => e.id), allKeys[0], allKeys[allKeys.length - 1]) : null
+  let minKey = days[0] ?? null
+  let maxKey = days.length ? days[days.length - 1] : null
+  for (const s of daysOf.values())
+    for (const dk of s) {
+      if (minKey === null || dk < minKey) minKey = dk
+      if (maxKey === null || dk > maxKey) maxKey = dk
+    }
+  const plan = minKey !== null && maxKey !== null ? await loadPlanner(emps.map((e) => e.id), minKey, maxKey) : null
 
   const rows: LogRow[] = []
   let truncated = false
   outer: for (const e of emps) {
-    const keys = new Set<string>([...byDay.keys()].filter((k) => k.startsWith(e.id + "|")).map((k) => k.split("|")[1]))
+    const keys = new Set<string>(daysOf.get(e.id) ?? [])
     if (wantAbsent && plan) {
       const joined = e.joiningDate.toISOString().slice(0, 10)
       // only days the person was meant to work (or was on leave) appear when there is no punch
@@ -195,12 +206,13 @@ export async function buildLogWorkbook(company: string, rows: LogRow[]) {
       cell.border = BORDER_DOUBLE
     }
 
+  const bodyFont = { size: 11, name: "Calibri" }
   rows.forEach((r, i) => {
     const row = ws.getRow(6 + i)
     r.forEach((v, c) => {
       const cell = row.getCell(c + 1)
       cell.value = v
-      cell.font = { size: 11, name: "Calibri" }
+      cell.font = bodyFont
       cell.border = BORDER_THIN
     })
   })
