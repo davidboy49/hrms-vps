@@ -134,6 +134,7 @@ export function EmployeeTable({
                 </button>
               </TableHead>
             ))}
+            {!gone && <TableHead className="font-mono text-[11px] uppercase tracking-wide">{t("emp.col.login")}</TableHead>}
             {gone && (
               <>
                 <TableHead>{t("emp.col.lastDay")}</TableHead>
@@ -178,6 +179,15 @@ export function EmployeeTable({
               <TableCell>
                 <StatusBadge name={r.statusName} color={r.statusColor} />
               </TableCell>
+              {!gone && (
+                <TableCell className="whitespace-nowrap">
+                  {r.hasLogin ? (
+                    <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground"><span className="size-1.5 rounded-full bg-green-500" />{t("emp.login.has")}</span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/15 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-300">{t("emp.login.none")}</span>
+                  )}
+                </TableCell>
+              )}
               {gone && (
                 <>
                   <TableCell className="whitespace-nowrap">{r.leftOn ?? "—"}</TableCell>

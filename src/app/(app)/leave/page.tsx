@@ -59,6 +59,7 @@ export default async function LeavePage({ searchParams }: { searchParams: Promis
         isHr={hr}
         showEmployee={manager}
         hasEmployee={Boolean(myEmployeeId)}
+        canRequest={can(user, "leave.request") || hr}
         types={types.map((x) => ({ id: x.id, code: x.code, name: x.name, isPaid: x.isPaid, daysPerYear: x.daysPerYear, isActive: x.isActive, allowHalfDay: x.allowHalfDay, proRateNewJoiners: x.proRateNewJoiners, waitingMonths: x.waitingMonths }))}
         balances={mine}
         employees={employees}

@@ -1,4 +1,4 @@
-import { requireUser } from "@/lib/session"
+import { requirePerm } from "@/lib/session"
 import { GUIDE } from "@/content/guide.generated"
 import { getLocale, getT, titleOf } from "@/i18n/server"
 import { PageHeader } from "@/components/page-header"
@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic"
 // The guide is fixed text that ships with the app (see scripts/build-guide.py), so it is safe to render as HTML.
 // It sits inside the signed-in area, so only people with an account can read it.
 export default async function GuidePage() {
-  await requireUser()
+  await requirePerm("guide.view")
   const t = await getT()
   const doc = GUIDE[await getLocale()]
   return (

@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { redirect } from "next/navigation"
-import { QrCode } from "lucide-react"
+import { CalendarOff, QrCode, Timer } from "lucide-react"
 import { db } from "@/lib/db"
 import { getPendingPasswordUser, getSession, can } from "@/lib/session"
 import { QR_REASON_KEY, resolveQr, suggestedType } from "@/lib/qr-attendance"
@@ -64,6 +64,22 @@ export default async function ScanPage({ searchParams }: { searchParams: Promise
       </header>
 
       <ActiveAnnouncements limit={2} />
+
+      {/* staff have no sidebar here, so this is how they reach their own leave and overtime requests */}
+      {(can(user, "leave.request") || can(user, "overtime.request")) && (
+        <nav className="flex gap-2" aria-label={t("scan.more")}>
+          {can(user, "leave.request") && (
+            <Button variant="outline" className="flex-1" render={<Link href="/leave" />}>
+              <CalendarOff /> {t("nav.leave")}
+            </Button>
+          )}
+          {can(user, "overtime.request") && (
+            <Button variant="outline" className="flex-1" render={<Link href="/overtime" />}>
+              <Timer /> {t("nav.overtime")}
+            </Button>
+          )}
+        </nav>
+      )}
 
       <section>
         <p className="text-sm text-muted-foreground">{t("scan.signedInAs")}</p>

@@ -8,13 +8,14 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { MultiSelect, type Option } from "@/components/multi-select"
+import { NativeSelect } from "@/components/native-select"
 import { useQueryParams } from "@/lib/use-query-params"
 import { useT } from "@/i18n/provider"
 import { ImportDialog } from "./import-dialog"
 
 type Opts = { departments: Option[]; designations: Option[]; contractTypes: Option[]; statuses: Option[] }
-type F = { dept: string[]; desig: string[]; contract: string[]; status: string[]; joinFrom: string; joinTo: string; rateMin: string; rateMax: string }
-const KEYS = ["dept", "desig", "contract", "status", "joinFrom", "joinTo", "rateMin", "rateMax"] as const
+type F = { dept: string[]; desig: string[]; contract: string[]; status: string[]; joinFrom: string; joinTo: string; rateMin: string; rateMax: string; login: string }
+const KEYS = ["dept", "desig", "contract", "status", "joinFrom", "joinTo", "rateMin", "rateMax", "login"] as const
 
 const csv = (s: string | null) => (s ? s.split(",").filter(Boolean) : [])
 
@@ -36,6 +37,7 @@ export function Toolbar({ opts, canEdit, canExport, canLogins }: { opts: Opts; c
       joinTo: sp.get("joinTo") ?? "",
       rateMin: sp.get("rateMin") ?? "",
       rateMax: sp.get("rateMax") ?? "",
+      login: sp.get("login") ?? "",
     }),
     [sp],
   )
@@ -76,6 +78,9 @@ export function Toolbar({ opts, canEdit, canExport, canLogins }: { opts: Opts; c
   if (applied.rateMin || applied.rateMax)
     chips.push({ k: "rate", text: `${t("emp.rate")}: ${applied.rateMin || "0"} – ${applied.rateMax || "∞"}`, clear: () => set({ rateMin: null, rateMax: null }) })
 
+  if (applied.login === "with" || applied.login === "without")
+    chips.push({ k: "login", text: `${t("emp.col.login")}: ${t(applied.login === "with" ? "emp.login.with" : "emp.login.without")}`, clear: () => set({ login: null }) })
+
   function apply() {
     set({
       dept: draft.dept.join(",") || null,
@@ -86,6 +91,7 @@ export function Toolbar({ opts, canEdit, canExport, canLogins }: { opts: Opts; c
       joinTo: draft.joinTo || null,
       rateMin: draft.rateMin || null,
       rateMax: draft.rateMax || null,
+      login: draft.login || null,
     })
   }
   function clearAll() {
@@ -204,6 +210,14 @@ export function Toolbar({ opts, canEdit, canExport, canLogins }: { opts: Opts; c
             <div className="space-y-1.5">
               <Label>{t("emp.status")}</Label>
               <MultiSelect options={opts.statuses} value={draft.status} onChange={(v) => setDraft({ ...draft, status: v })} />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="lg">{t("emp.col.login")}</Label>
+              <NativeSelect id="lg" value={draft.login} onChange={(e) => setDraft({ ...draft, login: e.target.value })}>
+                <option value="">{t("emp.login.any")}</option>
+                <option value="with">{t("emp.login.with")}</option>
+                <option value="without">{t("emp.login.without")}</option>
+              </NativeSelect>
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="jf">{t("filter.joinedFrom")}</Label>

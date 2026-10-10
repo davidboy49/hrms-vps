@@ -36,6 +36,7 @@ export function LeaveView(props: {
   status: string
   canDecide: boolean
   isHr: boolean
+  canRequest: boolean
   showEmployee: boolean
   hasEmployee: boolean
   types: Type[]
@@ -85,9 +86,11 @@ export function LeaveView(props: {
               </Button>
             </>
           )}
-          <Button onClick={() => setForm(true)}>
-            <Plus /> {t("lv.new")}
-          </Button>
+          {props.canRequest && (
+            <Button onClick={() => setForm(true)}>
+              <Plus /> {t("lv.new")}
+            </Button>
+          )}
         </div>
       </div>
 

@@ -19,7 +19,7 @@ type Type = { id: string; code: string; name: string; multiplier: number; isActi
 type Req = { id: string; employee: string; mine: boolean; type: string; date: string; hours: number; reason: string; status: string; note: string }
 type Emp = { id: string; employeeNo: string; nameEn: string }
 
-export function OvertimeView(props: { status: string; isHr: boolean; showEmployee: boolean; hasEmployee: boolean; types: Type[]; employees: Emp[]; requests: Req[] }) {
+export function OvertimeView(props: { status: string; isHr: boolean; canRequest: boolean; showEmployee: boolean; hasEmployee: boolean; types: Type[]; employees: Emp[]; requests: Req[] }) {
   const t = useT()
   const [pending, start] = useTransition()
   const [form, setForm] = useState(false)
@@ -47,9 +47,11 @@ export function OvertimeView(props: { status: string; isHr: boolean; showEmploye
               <Settings2 /> {t("ot.types")}
             </Button>
           )}
-          <Button onClick={() => setForm(true)}>
-            <Plus /> {t("ot.new")}
-          </Button>
+          {props.canRequest && (
+            <Button onClick={() => setForm(true)}>
+              <Plus /> {t("ot.new")}
+            </Button>
+          )}
         </div>
       </div>
 

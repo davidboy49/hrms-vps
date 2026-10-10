@@ -42,13 +42,13 @@ Tips:
 - Your last scans are listed under the scan button.
 
 ### 3.2 Request leave
-1. Open **Leave** in the menu and press **Request leave**.
+1. On the check-in page press **Leave** (HR and managers: **Leave** in the menu), then press **Request leave**.
 2. Choose the leave type, the dates and a reason. For **half a day**, choose *Morning only* or *Afternoon only* under the dates (for a longer leave you can do this for the first and the last day). A line under the form shows how many days the request uses and what your balance will be afterwards.
 3. Send the request. Only your working days are counted; days off and public holidays are not. A half day counts 0.5.
 4. Your balance cards at the top show days left per leave type. If you joined this year, your allowance is a share of the full year (the card says *pro-rated*). Some leave, such as Annual leave, cannot be taken until a few months after you join; the card then shows *Available from* a date. The status shows **Pending**, **Approved**, **Rejected** or **Cancelled**.
 5. You can cancel a request while it is still pending.
 
-If it says your sign-in is not linked to an employee record, ask HR to link it.
+If it says your sign-in is not linked to an employee record, ask HR to link it. If there is no **Request leave** button, your role does not have the permission *Request own leave*: an Admin can give it in **Settings → Roles** (the same for overtime: *Request own overtime*).
 
 ### 3.3 Request overtime
 1. Open **Overtime** and press **Request overtime**.
@@ -78,6 +78,7 @@ Then open **Settings → Company** to set the company name and logo. They appear
 - To bring someone back, open the **Deactivated** tab, then **⋯ → Reactivate** (or the button on their profile). Choose the new status and start date, optionally add a note, and tick *Turn their login back on* if they should sign in again. You need the permission *Reactivate employees* (Admin has it; it can be given to a role in **Settings → Roles**). The profile keeps an **Employment history** of every deactivation and reactivation with the reason and who did it.
 - Switching between *active* and *not active* is only possible with Deactivate and Reactivate, not in the edit form or the import.
 - To let a person sign in and scan with their phone, create a user in **Settings → Users** and link it to their employee record. For many people at once, see 4.9.
+- The list has a **Login** column showing who already has a login and who does not yet. In **Filter**, choose *Login* → *No login yet* to see only the people who still need one (then use 4.9).
 
 ### 4.3 QR attendance
 Open **Attendance → QR**.

@@ -31,7 +31,9 @@ export async function requestOvertime(input: z.input<typeof requestShape>): Prom
   const u = await me()
   const p = requestShape.safeParse(input)
   if (!p.success) return { error: t("ot.err.invalid") }
-  const employeeId = can(u, "overtime.manage") && p.data.employeeId ? p.data.employeeId : u.employeeId
+  const forOther = can(u, "overtime.manage") && Boolean(p.data.employeeId) && p.data.employeeId !== u.employeeId
+  if (!forOther && !can(u, "overtime.request")) return { error: t("lv.err.noRequestPerm") }
+  const employeeId = forOther ? p.data.employeeId! : u.employeeId
   if (!employeeId) return { error: t("lv.err.noEmployee") }
   const type = await db.overtimeType.findUnique({ where: { id: p.data.overtimeTypeId } })
   if (!type || !type.isActive) return { error: t("ot.err.invalid") }

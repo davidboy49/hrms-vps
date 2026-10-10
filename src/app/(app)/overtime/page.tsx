@@ -39,6 +39,7 @@ export default async function OvertimePage({ searchParams }: { searchParams: Pro
         isHr={hr}
         showEmployee={manager}
         hasEmployee={Boolean(myEmployeeId)}
+        canRequest={can(user, "overtime.request") || hr}
         types={types.map((x) => ({ id: x.id, code: x.code, name: x.name, multiplier: x.multiplier, isActive: x.isActive }))}
         employees={employees}
         requests={requests.map((r) => ({

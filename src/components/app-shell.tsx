@@ -44,7 +44,7 @@ const NAV: NavEntry[] = [
   { href: "/leave", label: "nav.leave", icon: CalendarOff },
   { href: "/overtime", label: "nav.overtime", icon: Timer },
   { href: "/announcements", label: "nav.announcements", icon: Megaphone, perm: "announcements.manage" },
-  { href: "/guide", label: "nav.guide", icon: BookOpen },
+  { href: "/guide", label: "nav.guide", icon: BookOpen, perm: "guide.view" },
   { group: "nav.admin" },
   {
     href: "/masterdata",
