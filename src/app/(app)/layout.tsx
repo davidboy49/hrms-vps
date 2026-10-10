@@ -9,12 +9,14 @@ import { versionLabel } from "@/lib/version"
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await requireUser()
-  const [brand, jar, row] = await Promise.all([getBranding(), cookies(), db.user.findUnique({ where: { id: user.id }, select: { favorites: true } })])
+  const [brand, jar, row, sus] = await Promise.all([getBranding(), cookies(), db.user.findUnique({ where: { id: user.id }, select: { favorites: true } }), db.setting.findUnique({ where: { key: "attendance.suspicious" } })])
+  // the Suspicious tab is only offered while the checks are switched on
+  const shellUser = sus?.value === "1" ? user : { ...user, perms: user.perms.filter((p) => p !== "attendance.review") }
   // pinned unless the person has switched it off
   const initialPinned = jar.get("pd_sidebar")?.value !== "0"
   return (
     <AppShell
-      user={user}
+      user={shellUser}
       company={brand.company}
       logoUrl={brand.logoUrl}
       initialPinned={initialPinned}
