@@ -78,6 +78,7 @@ Then open **Settings → Company** to set the company name and logo. They appear
 - To bring someone back, open the **Deactivated** tab, then **⋯ → Reactivate** (or the button on their profile). Choose the new status and start date, optionally add a note, and tick *Turn their login back on* if they should sign in again. You need the permission *Reactivate employees* (Admin has it; it can be given to a role in **Settings → Roles**). The profile keeps an **Employment history** of every deactivation and reactivation with the reason and who did it.
 - Switching between *active* and *not active* is only possible with Deactivate and Reactivate, not in the edit form or the import.
 - To let a person sign in and scan with their phone, create a user in **Settings → Users** and link it to their employee record. For many people at once, see 4.9.
+- The list has a **Login** column showing who already has a login and who does not yet. In **Filter**, choose *Login* → *No login yet* to see only the people who still need one (then use 4.9).
 
 ### 4.3 QR attendance
 Open **Attendance → QR**.
