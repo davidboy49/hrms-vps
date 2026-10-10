@@ -66,6 +66,8 @@ services:
       db: { condition: service_healthy }
       rustfs-init: { condition: service_completed_successfully }
     environment:
+      # standard (default) or payroll: set by whoever runs this server in .env, see deploy/RUNBOOK.md
+      EDITION: ${EDITION:-standard}
       DATABASE_URL: postgresql://peopledesk:${POSTGRES_PASSWORD}@db:5432/peopledesk?schema=public&connection_limit=15&pool_timeout=30
       DATABASE_URL_UNPOOLED: postgresql://peopledesk:${POSTGRES_PASSWORD}@db:5432/peopledesk?schema=public
       AUTH_SECRET: ${AUTH_SECRET:?set AUTH_SECRET in .env}

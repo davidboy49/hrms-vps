@@ -27,6 +27,18 @@ Pull requests run only the check. To deploy again without a new commit: `gh work
 
 The sidebar shows `version · commit · build time` to Admin and HR, so you can tell which build is live. `GET /api/health` returns `{"ok":true}` (200) when the app can reach the database, and 503 otherwise.
 
+## Editions (standard or payroll)
+
+One codebase, two editions. `standard` is the default and is HR Toch as it always was. `payroll` adds the Payroll section (monthly payroll-input report, Excel download) and its two permissions.
+
+The edition is chosen per installation by whoever runs the server, never by the customer:
+
+1. Add `EDITION=payroll` to the `.env` next to `compose.yaml` (remove the line, or set `EDITION=standard`, to go back).
+2. Recreate the app container: `docker compose up -d app`.
+3. In Settings -> Roles, give *Payroll* permissions to the roles that should see pay data (Admin has them automatically). HR does not get them by default.
+
+In the standard edition the payroll permissions do not exist (not even for the Admin) and `/payroll` answers "not found". Switching back never deletes data.
+
 ## Roll back a bad release
 
 Preferred, keeps history: revert the commit and push.

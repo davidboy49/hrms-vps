@@ -3,7 +3,8 @@ import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 import { cache } from "react"
 import { db } from "@/lib/db"
-import { ALL_PERMISSIONS, can, isPermission, type Permission } from "@/lib/permissions"
+import { ALL_PERMISSIONS, PAYROLL_PERMISSIONS, PERMISSION_GROUPS, can, isPermission, type Permission } from "@/lib/permissions"
+import { payrollEdition } from "@/lib/edition"
 
 export const COOKIE = "pd_session"
 
@@ -23,7 +24,14 @@ export type SessionUser = { id: string; username: string; email: string | null; 
 
 /** Permissions of a role row. The built-in Admin always has everything, so it can never be locked out. */
 export function permsOf(r: { key: string | null; permissions: string[] }): Permission[] {
-  return r.key === "ADMIN" ? ALL_PERMISSIONS : r.permissions.filter(isPermission)
+  const all = r.key === "ADMIN" ? ALL_PERMISSIONS : r.permissions.filter(isPermission)
+  // payroll permissions exist only in the Payroll edition
+  return payrollEdition() ? all : all.filter((p) => !PAYROLL_PERMISSIONS.includes(p))
+}
+
+/** The permission groups this edition offers (the Roles screen lists these). */
+export function availableGroups() {
+  return PERMISSION_GROUPS.filter((g) => payrollEdition() || g.group !== "payroll")
 }
 type Claims = { id: string; v: number; d: number }
 

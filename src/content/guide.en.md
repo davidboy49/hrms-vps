@@ -161,6 +161,14 @@ If the group stays silent, check that the bot is in the group and that Enabled i
 
 ---
 
+### 5.4 Payroll (Payroll edition only)
+
+If your company has the Payroll edition, **Payroll** appears in the menu for roles that have the *Payroll* permissions (Admin has them; give them to others in **Settings → Roles**).
+
+Choose a **month** and press **Show**. For each employee you see the facts payroll is worked out from: scheduled days, days worked, absent days, paid and unpaid leave, work on a day off, late days and minutes, days with no clock-out, and approved overtime hours (also weighted by the overtime multiplier). **Download Excel** gives the same sheet with overtime split by type.
+
+Check absences and days with no clock-out before paying. The current month counts up to yesterday. Amounts and deductions are not calculated here.
+
 ## 6. Troubleshooting
 
 | Problem | What to try |
