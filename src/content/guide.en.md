@@ -83,7 +83,7 @@ Then open **Settings → Company** to set the company name and logo. They appear
 ### 4.3 QR attendance
 Open **Attendance → QR**.
 - Choose, per location, a **fixed QR** (printed and put on the wall; the location check protects it) or a **rotating QR** (changes regularly; show it on a screen).
-- Print or display the QR. If the code is ever leaked, reset it here and print a new one.
+- Print or display the QR. If the code is ever leaked, an Admin can reset it here (**Regenerate QR**, needs the permission *Regenerate a location's QR code*) and you print a new one. You must type the location's name to confirm, because every printed copy stops working at once. The page shows who regenerated it last and when.
 
 ### 4.4 Attendance
 - **Punches**: every raw scan, with search, filters and **Export** (an Excel file in your attendance-log format, with the days off, holidays and leave marked).

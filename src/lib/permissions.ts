@@ -7,7 +7,7 @@ export const PERMISSION_GROUPS = [
   { group: "dashboard", perms: ["dashboard.view", "alerts.view"] },
   { group: "employees", perms: ["employees.view", "employees.edit", "employees.import", "employees.export", "employees.deactivate", "employees.reactivate"] },
   { group: "attendance", perms: ["attendance.view", "attendance.manage", "attendance.export", "attendance.devices"] },
-  { group: "roster", perms: ["roster.view", "roster.edit", "qr.manage"] },
+  { group: "roster", perms: ["roster.view", "roster.edit", "qr.manage", "qr.regenerate"] },
   { group: "leave", perms: ["leave.request", "overtime.request", "leave.viewAll", "leave.manage", "overtime.viewAll", "overtime.manage"] },
   { group: "help", perms: ["guide.view"] },
   { group: "payroll", perms: ["payroll.view", "payroll.export", "payroll.manage"] },
