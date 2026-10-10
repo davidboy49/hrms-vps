@@ -1,7 +1,7 @@
 import { Download } from "lucide-react"
 import { db } from "@/lib/db"
 import { redirect } from "next/navigation"
-import { can, permsOf, requireUser } from "@/lib/session"
+import { availableGroups, can, permsOf, requireUser } from "@/lib/session"
 import type { Permission } from "@/lib/permissions"
 import { fmtDateTime } from "@/lib/format"
 import { PageHeader } from "@/components/page-header"
@@ -118,7 +118,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
         return <TelegramForm cfg={{ hasToken: Boolean(c.token), chatId: c.chatId, enabled: c.enabled, lang: c.lang, flags: c.flags }} />
       })()}
       {tab === "audit" && <Audit />}
-      {tab === "roles" && <RolesPanel roles={roleRows} />}
+      {tab === "roles" && <RolesPanel roles={roleRows} groups={availableGroups().map((g) => ({ group: g.group, perms: [...g.perms] }))} />}
       {tab === "account" && (
         <div className="space-y-4">
           <p className="text-sm text-muted-foreground">

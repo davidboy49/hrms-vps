@@ -8,13 +8,16 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { ALL_PERMISSIONS, PERMISSION_GROUPS, type Permission } from "@/lib/permissions"
+import type { Permission } from "@/lib/permissions"
 import { useT } from "@/i18n/provider"
 import { deleteRole, saveRole } from "./roles-actions"
 
 export type RoleRow = { id: string; key: string | null; name: string; description: string; isSystem: boolean; permissions: Permission[]; users: number }
 
-export function RolesPanel({ roles }: { roles: RoleRow[] }) {
+export type PermGroup = { group: string; perms: readonly string[] }
+
+export function RolesPanel({ roles, groups }: { roles: RoleRow[]; groups: PermGroup[] }) {
+  const total = groups.reduce((n, g) => n + g.perms.length, 0)
   const t = useT()
   const [pending, start] = useTransition()
   // null = closed, "new" = creating, otherwise the role being edited
@@ -104,7 +107,7 @@ export function RolesPanel({ roles }: { roles: RoleRow[] }) {
                   {r.permissions.length === 0 && <span className="block text-xs text-muted-foreground">{t("roles.selfService")}</span>}
                 </TableCell>
                 <TableCell className="hidden text-muted-foreground md:table-cell">
-                  {r.permissions.length} / {ALL_PERMISSIONS.length}
+                  {r.permissions.length} / {total}
                 </TableCell>
                 <TableCell className="text-muted-foreground">{r.users}</TableCell>
                 <TableCell className="whitespace-nowrap text-right">
@@ -149,7 +152,7 @@ export function RolesPanel({ roles }: { roles: RoleRow[] }) {
             {isAdminRole && <p className="rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground">{t("roles.adminNote")}</p>}
 
             <div className="space-y-3">
-              {PERMISSION_GROUPS.map((g) => {
+              {groups.map((g) => {
                 const all = g.perms.every((p) => picked.has(p))
                 return (
                   <fieldset key={g.group} className="rounded-lg border p-3">

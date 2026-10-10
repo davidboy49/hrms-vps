@@ -3,7 +3,8 @@
 import { revalidatePath } from "next/cache"
 import { db } from "@/lib/db"
 import { assertPerm } from "@/lib/session"
-import { isPermission } from "@/lib/permissions"
+import { isPermission, PAYROLL_PERMISSIONS } from "@/lib/permissions"
+import { payrollEdition } from "@/lib/edition"
 import { audit } from "@/lib/audit"
 import { getT } from "@/i18n/server"
 
@@ -13,7 +14,7 @@ function clean(input: { name: string; description?: string; permissions: string[
   return {
     name: input.name.trim().slice(0, 60),
     description: (input.description ?? "").trim().slice(0, 200),
-    permissions: [...new Set(input.permissions.filter(isPermission))],
+    permissions: [...new Set(input.permissions.filter(isPermission).filter((p) => payrollEdition() || !PAYROLL_PERMISSIONS.includes(p)))],
   }
 }
 

@@ -5,7 +5,7 @@ import Link from "next/link"
 import { usePathname, useSearchParams } from "next/navigation"
 import { useEffect, useState } from "react"
 import { useTheme } from "next-themes"
-import { BookOpen, CalendarOff, ChevronDown, Clock, Timer, Database, Megaphone, LayoutDashboard, Menu, Moon, Pin, PinOff, Settings, Star, Sun, Users } from "lucide-react"
+import { BookOpen, CalendarOff, Wallet, ChevronDown, Clock, Timer, Database, Megaphone, LayoutDashboard, Menu, Moon, Pin, PinOff, Settings, Star, Sun, Users } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet"
@@ -43,6 +43,7 @@ const NAV: NavEntry[] = [
   },
   { href: "/leave", label: "nav.leave", icon: CalendarOff },
   { href: "/overtime", label: "nav.overtime", icon: Timer },
+  { href: "/payroll", label: "nav.payroll", icon: Wallet, perm: "payroll.view" },
   { href: "/announcements", label: "nav.announcements", icon: Megaphone, perm: "announcements.manage" },
   { href: "/guide", label: "nav.guide", icon: BookOpen, perm: "guide.view" },
   { group: "nav.admin" },
